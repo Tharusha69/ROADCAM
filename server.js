@@ -59,8 +59,13 @@ const upload = multer({
   limits: { fileSize: 50 * 1024 * 1024 }
 });
 
-// Routes
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'pro_road_cam_server_upload.html'));
+});  // ← ) add කරන්න
 
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'dashboard.html'));  // ← .html add කරන්න
+});
 // Upload photo with metadata
 app.post('/api/upload', upload.single('photo'), (req, res) => {
   if (!req.file) {
