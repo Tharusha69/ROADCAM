@@ -1,5 +1,5 @@
 {
-  "name": "pro-road-cam",
+  "name": "pro-road-cam-server",
   "version": "1.0.0",
   "description": "Pro Road Cam Backend Server with SQLite Database",
   "main": "server.js",
