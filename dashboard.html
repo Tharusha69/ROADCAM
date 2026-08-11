@@ -92,9 +92,9 @@ input[type="date"]{background:rgba(255,255,255,0.05);border:1px solid rgba(255,2
 
   <div class="controls">
     <div class="control-group">
-      <button class="filter-btn active" onclick="filterPhotos('all')">All Photos</button>
-      <button class="filter-btn" onclick="filterPhotos('poster')">📸 Poster</button>
-      <button class="filter-btn" onclick="filterPhotos('self')">🤳 Self</button>
+      <button class="filter-btn active" onclick="filterPhotos(event,'all')">All Photos</button>
+      <button class="filter-btn" onclick="filterPhotos(event,'poster')">📸 Poster</button>
+      <button class="filter-btn" onclick="filterPhotos(event,'self')">🤳 Self</button>
     </div>
     <div class="control-group">
       <input type="date" id="dateFilter" onchange="filterByDate()">
@@ -153,7 +153,7 @@ function loadStats() {
     });
 }
 
-function filterPhotos(type) {
+function filterPhotos(event, type) {
   currentFilter = type;
   currentDate = '';
   document.getElementById('dateFilter').value = '';
@@ -194,8 +194,9 @@ function renderPhotos(photos) {
   }
   
   emptyState.style.display = 'none';
-  gallery.innerHTML = photos.map(photo => `
-    <div class="photo-card" onclick="openModal('${photo.filepath}', ${JSON.stringify(photo).replace(/'/g, '&apos;')})">
+  filteredPhotos = photos;
+  gallery.innerHTML = photos.map((photo, idx) => `
+    <div class="photo-card" onclick="openModal(${idx})">
       <img class="photo-img" src="${photo.filepath}" alt="Photo">
       <button class="photo-delete" onclick="deletePhoto(event, ${photo.id})">🗑</button>
       <div class="photo-info">
@@ -208,12 +209,14 @@ function renderPhotos(photos) {
   `).join('');
 }
 
-function openModal(img, photo) {
+function openModal(idx) {
+  const photo = filteredPhotos[idx];
+  if (!photo) return;
   const modal = document.getElementById('photoModal');
   const modalImg = document.getElementById('modalImg');
   const modalDetails = document.getElementById('modalDetails');
   
-  modalImg.src = img;
+  modalImg.src = photo.filepath;
   modalDetails.innerHTML = `
     <div class="detail-item">
       <div class="detail-label">Type</div>
