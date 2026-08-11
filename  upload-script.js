@@ -10,7 +10,7 @@ const SERVER_URL = process.env.SERVER_URL || 'http://localhost:3000';
 const PHOTO_TYPE = process.env.PHOTO_TYPE || 'poster'; // 'poster' or 'self'
 
 // Helper function to upload photo
-async function uploadPhoto(filePath, metadata) {
+async function uploadPhoto(filePath, metadata, serverUrl) {
   return new Promise((resolve, reject) => {
     try {
       const fileContent = fs.readFileSync(filePath);
@@ -55,7 +55,7 @@ async function uploadPhoto(filePath, metadata) {
         Buffer.from(`\r\n--${boundary}--\r\n`)
       ]);
       
-      const urlObj = new URL(SERVER_URL);
+      const urlObj = new URL(serverUrl);
       const isHttps = urlObj.protocol === 'https:';
       const protocol = isHttps ? https : http;
       
@@ -177,8 +177,7 @@ Examples:
   `);
   
   try {
-    global.SERVER_URL = options.server;
-    const response = await uploadPhoto(photoPath, metadata);
+    const response = await uploadPhoto(photoPath, metadata, options.server);
     
     if (response.success) {
       console.log(`✅ Upload successful!`);
@@ -192,13 +191,6 @@ Examples:
     console.error(`❌ Error: ${err.message}`);
     process.exit(1);
   }
-}
-
-// Override SERVER_URL from args if provided
-const serverArg = process.argv.find(arg => arg.startsWith('--server'));
-if (serverArg) {
-  const idx = process.argv.indexOf(serverArg);
-  global.SERVER_URL = process.argv[idx + 1];
 }
 
 main().catch(err => {
