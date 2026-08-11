@@ -43,6 +43,7 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb' }));
 app.use('/uploads', express.static(uploadsDir));
+app.use(express.static(__dirname));
 
 // Multer configuration
 const storage = multer.diskStorage({
@@ -73,7 +74,7 @@ app.post('/api/upload', upload.single('photo'), (req, res) => {
   const sql = `INSERT INTO photos (filename, type, date, time, timestamp, location, device, filepath) 
               VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
 
-  db.run(sql, [filename, type, date, time, timestamp, location, device, filepath], (err) => {
+  db.run(sql, [filename, type, date, time, timestamp, location, device, filepath], function(err) {
     if (err) {
       fs.unlinkSync(req.file.path);
       return res.status(500).json({ error: 'Database error: ' + err.message });
@@ -157,7 +158,7 @@ app.delete('/api/photos/:id', (req, res) => {
       return res.status(404).json({ error: 'Photo not found' });
     }
     
-    const filePath = path.join(__dirname, photo.filepath);
+    const filePath = path.join(__dirname, photo.filepath.replace(/^\//, ''));
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
     }
@@ -177,7 +178,7 @@ app.delete('/api/photos/delete/date/:date', (req, res) => {
     if (err) return res.status(500).json({ error: err.message });
     
     photos.forEach(photo => {
-      const filePath = path.join(__dirname, photo.filepath);
+      const filePath = path.join(__dirname, photo.filepath.replace(/^\//, ''));
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
       }
