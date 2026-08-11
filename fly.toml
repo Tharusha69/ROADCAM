@@ -1,10 +1,10 @@
-# fly.toml app configuration file generated for roadcam on 2026-08-11T11:18:09Z
+# fly.toml app configuration file generated for roadcam--1v-vq on 2026-08-11T11:45:50Z
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'roadcam'
-primary_region = 'iad'
+app = 'roadcam--1v-vq'
+primary_region = 'ams'
 
 [build]
 
@@ -16,7 +16,7 @@ primary_region = 'iad'
   auto_extend_size_limit = '10GB'
 
 [http_service]
-  internal_port = 3000
+  internal_port = 8080
   force_https = true
   auto_stop_machines = 'stop'
   auto_start_machines = true
