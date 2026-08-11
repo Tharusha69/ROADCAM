@@ -1,0 +1,22 @@
+{
+  "name": "pro-road-cam-server",
+  "version": "1.0.0",
+  "description": "Pro Road Cam Backend Server with SQLite Database",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "keywords": ["roadcam", "photos", "database"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "sqlite3": "^5.1.6",
+    "multer": "^1.4.5-lts.1",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
