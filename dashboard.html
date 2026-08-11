@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pro Road Cam Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Plus Jakarta Sans',system-ui,sans-serif}
+:root{--g:#00d97e;--gd:#00a85a;--bg:#030a06;--text:#fff}
+body{background:var(--bg);color:var(--text);min-height:100vh;padding:20px}
+
+.container{max-width:1400px;margin:0 auto}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:30px;border-bottom:2px solid rgba(0,217,126,0.2);padding-bottom:20px}
+.header h1{font-size:28px;font-weight:800;letter-spacing:1px}
+.header-info{display:flex;gap:20px;align-items:center;text-align:right}
+.stat{display:flex;flex-direction:column;align-items:center}
+.stat-number{font-size:24px;font-weight:800;color:var(--g)}
+.stat-label{font-size:11px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.5px}
+
+.controls{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;align-items:center}
+.control-group{display:flex;gap:8px;align-items:center}
+.filter-btn{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.8);padding:8px 14px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:0.5px;transition:all 0.2s}
+.filter-btn.active{background:rgba(0,217,126,0.15);border-color:var(--g);color:var(--g)}
+.filter-btn:hover{background:rgba(255,255,255,0.12)}
+
+input[type="date"]{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:var(--text);padding:8px 12px;border-radius:8px;font-size:11px}
+
+.action-btns{display:flex;gap:8px;margin-left:auto}
+.action-btn{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:8px 14px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:0.5px;transition:all 0.2s}
+.action-btn:hover{background:rgba(255,255,255,0.14)}
+.action-btn.danger{background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.3);color:#ef4444}
+
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px;margin-bottom:30px}
+.photo-card{position:relative;border-radius:12px;overflow:hidden;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);transition:transform 0.2s,border-color 0.2s;cursor:pointer}
+.photo-card:hover{transform:translateY(-4px);border-color:rgba(0,217,126,0.3)}
+.photo-img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
+.photo-info{padding:12px;font-size:10px;color:rgba(255,255,255,0.7)}
+.photo-type{color:var(--g);font-weight:700;text-transform:uppercase;margin-bottom:4px}
+.photo-date{margin-bottom:2px}
+.photo-time{color:rgba(255,255,255,0.5);font-size:9px}
+.photo-location{color:rgba(255,255,255,0.5);font-size:9px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.photo-delete{position:absolute;top:8px;right:8px;background:rgba(239,68,68,0.8);border:none;color:#fff;width:28px;height:28px;border-radius:50%;font-size:14px;cursor:pointer;display:none;transition:background 0.2s}
+.photo-card:hover .photo-delete{display:flex;align-items:center;justify-content:center}
+.photo-delete:hover{background:rgba(239,68,68,1)}
+
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:1000;align-items:center;justify-content:center;padding:20px}
+.modal.active{display:flex}
+.modal-content{background:var(--bg);border:1px solid rgba(0,217,126,0.3);border-radius:12px;max-width:90vw;max-height:90vh;overflow:auto;padding:20px;position:relative}
+.modal-close{position:absolute;top:16px;right:16px;background:none;border:none;color:#fff;font-size:24px;cursor:pointer}
+.modal-img{max-width:100%;max-height:70vh;display:block;border-radius:8px;margin-bottom:16px}
+.modal-details{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.06)}
+.detail-item{display:flex;flex-direction:column}
+.detail-label{font-size:10px;color:var(--g);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px}
+.detail-value{font-size:12px;color:rgba(255,255,255,0.8)}
+
+.empty-state{text-align:center;padding:60px 20px;color:rgba(255,255,255,0.4)}
+.empty-icon{font-size:48px;margin-bottom:16px;opacity:0.5}
+.empty-text{font-size:16px;margin-bottom:8px}
+
+.loading{text-align:center;padding:40px;color:rgba(255,255,255,0.5)}
+
+@media (max-width: 768px) {
+  .header{flex-direction:column;text-align:center;gap:16px}
+  .header-info{width:100%;justify-content:space-around}
+  .controls{flex-direction:column}
+  .action-btns{width:100%;flex-direction:column;margin:0}
+  .gallery{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1>📸 Road Cam Dashboard</h1>
+    <div class="header-info">
+      <div class="stat">
+        <div class="stat-number" id="totalCount">0</div>
+        <div class="stat-label">Total Photos</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number" id="posterCount">0</div>
+        <div class="stat-label">Poster</div>
+      </div>
+      <div class="stat">
+        <div class="stat-number" id="selfCount">0</div>
+        <div class="stat-label">Self</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="control-group">
+      <button class="filter-btn active" onclick="filterPhotos('all')">All Photos</button>
+      <button class="filter-btn" onclick="filterPhotos('poster')">📸 Poster</button>
+      <button class="filter-btn" onclick="filterPhotos('self')">🤳 Self</button>
+    </div>
+    <div class="control-group">
+      <input type="date" id="dateFilter" onchange="filterByDate()">
+    </div>
+    <div class="action-btns">
+      <button class="action-btn" onclick="exportDatabase()">📥 Export</button>
+      <button class="action-btn danger" onclick="deleteSelected()">🗑 Delete Date</button>
+      <button class="action-btn" onclick="refreshData()">🔄 Refresh</button>
+    </div>
+  </div>
+
+  <div id="galleryContainer">
+    <div class="gallery" id="gallery"></div>
+    <div class="empty-state" id="emptyState" style="display:none">
+      <div class="empty-icon">📷</div>
+      <div class="empty-text">No photos found</div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="photoModal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <img class="modal-img" id="modalImg" src="" alt="Photo">
+    <div class="modal-details" id="modalDetails"></div>
+  </div>
+</div>
+
+<script>
+let allPhotos = [];
+let filteredPhotos = [];
+let currentFilter = 'all';
+let currentDate = '';
+
+const API_URL = window.location.origin;
+
+async function loadPhotos() {
+  try {
+    const response = await fetch(`${API_URL}/api/photos`);
+    allPhotos = await response.json();
+    loadStats();
+    renderPhotos(allPhotos);
+  } catch (err) {
+    console.error('Error loading photos:', err);
+    document.getElementById('emptyState').style.display = 'block';
+  }
+}
+
+function loadStats() {
+  fetch(`${API_URL}/api/stats`)
+    .then(r => r.json())
+    .then(stats => {
+      document.getElementById('totalCount').textContent = stats.total;
+      document.getElementById('posterCount').textContent = stats.poster;
+      document.getElementById('selfCount').textContent = stats.self;
+    });
+}
+
+function filterPhotos(type) {
+  currentFilter = type;
+  currentDate = '';
+  document.getElementById('dateFilter').value = '';
+  
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  
+  if (type === 'all') {
+    renderPhotos(allPhotos);
+  } else {
+    renderPhotos(allPhotos.filter(p => p.type === type));
+  }
+}
+
+function filterByDate() {
+  const dateInput = document.getElementById('dateFilter').value;
+  currentDate = dateInput;
+  
+  let filtered = allPhotos;
+  if (currentFilter !== 'all') {
+    filtered = filtered.filter(p => p.type === currentFilter);
+  }
+  if (dateInput) {
+    filtered = filtered.filter(p => p.date === dateInput);
+  }
+  
+  renderPhotos(filtered);
+}
+
+function renderPhotos(photos) {
+  const gallery = document.getElementById('gallery');
+  const emptyState = document.getElementById('emptyState');
+  
+  if (photos.length === 0) {
+    gallery.innerHTML = '';
+    emptyState.style.display = 'block';
+    return;
+  }
+  
+  emptyState.style.display = 'none';
+  gallery.innerHTML = photos.map(photo => `
+    <div class="photo-card" onclick="openModal('${photo.filepath}', ${JSON.stringify(photo).replace(/'/g, '&apos;')})">
+      <img class="photo-img" src="${photo.filepath}" alt="Photo">
+      <button class="photo-delete" onclick="deletePhoto(event, ${photo.id})">🗑</button>
+      <div class="photo-info">
+        <div class="photo-type">${photo.type === 'self' ? '🤳 Self' : '📸 Poster'}</div>
+        <div class="photo-date">${photo.date}</div>
+        <div class="photo-time">${photo.time}</div>
+        <div class="photo-location">${photo.location}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openModal(img, photo) {
+  const modal = document.getElementById('photoModal');
+  const modalImg = document.getElementById('modalImg');
+  const modalDetails = document.getElementById('modalDetails');
+  
+  modalImg.src = img;
+  modalDetails.innerHTML = `
+    <div class="detail-item">
+      <div class="detail-label">Type</div>
+      <div class="detail-value">${photo.type === 'self' ? '🤳 Self Photo' : '📸 Poster Photo'}</div>
+    </div>
+    <div class="detail-item">
+      <div class="detail-label">Date</div>
+      <div class="detail-value">${photo.date}</div>
+    </div>
+    <div class="detail-item">
+      <div class="detail-label">Time</div>
+      <div class="detail-value">${photo.time}</div>
+    </div>
+    <div class="detail-item">
+      <div class="detail-label">Location</div>
+      <div class="detail-value">${photo.location}</div>
+    </div>
+    <div class="detail-item">
+      <div class="detail-label">Device</div>
+      <div class="detail-value">${photo.device}</div>
+    </div>
+  `;
+  
+  modal.classList.add('active');
+}
+
+function closeModal() {
+  document.getElementById('photoModal').classList.remove('active');
+}
+
+async function deletePhoto(event, id) {
+  event.stopPropagation();
+  if (!confirm('Delete this photo?')) return;
+  
+  try {
+    await fetch(`${API_URL}/api/photos/${id}`, { method: 'DELETE' });
+    loadPhotos();
+  } catch (err) {
+    console.error('Error deleting photo:', err);
+  }
+}
+
+async function deleteSelected() {
+  const date = prompt('Enter date to delete (YYYY-MM-DD):');
+  if (!date) return;
+  
+  if (!confirm(`Delete all photos from ${date}?`)) return;
+  
+  try {
+    const response = await fetch(`${API_URL}/api/photos/delete/date/${date}`, { method: 'DELETE' });
+    const data = await response.json();
+    alert(`✅ Deleted ${data.deleted} photos`);
+    loadPhotos();
+  } catch (err) {
+    console.error('Error:', err);
+  }
+}
+
+function exportDatabase() {
+  window.location.href = `${API_URL}/api/export`;
+}
+
+function refreshData() {
+  loadPhotos();
+}
+
+// Load photos on page load
+loadPhotos();
+
+// Auto-refresh every 30 seconds
+setInterval(loadPhotos, 30000);
+</script>
+
+</body>
+</html>
