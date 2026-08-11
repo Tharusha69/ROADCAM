@@ -10,6 +10,11 @@ const PORT = process.env.PORT || 3000;
 
 // /data folder එකට point කරන්න
 const uploadsDir = path.join('/data', 'uploads');
+
+// Create uploads directory if it doesn't exist
+if (!fs.existsSync('/data')) fs.mkdirSync('/data', { recursive: true });
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+
 const db = new sqlite3.Database('/data/roadcam.db');
 
 // Create tables
@@ -51,13 +56,6 @@ const upload = multer({
   limits: { fileSize: 50 * 1024 * 1024 }
 });
 
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'pro_road_cam_server_upload.html'));
-});  // ← ) add කරන්න
-
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'dashboard.html'));  // ← .html add කරන්න
-});
 // Upload photo with metadata
 app.post('/api/upload', upload.single('photo'), (req, res) => {
   if (!req.file) {
@@ -155,7 +153,7 @@ app.delete('/api/photos/:id', (req, res) => {
       return res.status(404).json({ error: 'Photo not found' });
     }
     
-    const filePath = path.join(__dirname, photo.filepath.replace(/^\//, ''));
+    const filePath = path.join('/data', photo.filepath);
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
     }
@@ -175,7 +173,7 @@ app.delete('/api/photos/delete/date/:date', (req, res) => {
     if (err) return res.status(500).json({ error: err.message });
     
     photos.forEach(photo => {
-      const filePath = path.join(__dirname, photo.filepath.replace(/^\//, ''));
+      const filePath = path.join('/data', photo.filepath);
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
       }
@@ -200,6 +198,15 @@ app.get('/api/export', (req, res) => {
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+// HTML routes — API routes වලට පස්සෙ define කරන්න ඕනෙ
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'pro_road_cam_server_upload.html'));
+});
+
+app.get('/dashboard', (req, res) => {
+  res.sendFile(path.join(__dirname, 'dashboard.html'));
 });
 
 app.listen(PORT, () => {
