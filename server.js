@@ -6,10 +6,10 @@ const fs = require('fs');
 const cors = require('cors');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
 // /data folder එකට point කරන්න
 const uploadsDir = path.join('/data', 'uploads');
+const PORT = process.env.PORT || 8080;
 
 // Create uploads directory if it doesn't exist
 if (!fs.existsSync('/data')) fs.mkdirSync('/data', { recursive: true });
@@ -209,9 +209,11 @@ app.get('/dashboard', (req, res) => {
   res.sendFile(path.join(__dirname, 'dashboard.html'));
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`📊 Dashboard: http://localhost:${PORT}/dashboard.html`);
+
+// ...
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
 });
 
 process.on('SIGINT', () => {
