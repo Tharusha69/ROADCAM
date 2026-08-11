@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Pro Road Cam v7.0 - Server Edition</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Plus Jakarta Sans',system-ui,sans-serif}
+:root{--g:#00d97e;--gd:#00a85a;--bg:#030a06;--glass:rgba(0,0,0,0.55)}
+body{background:var(--bg);color:#fff;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+#cam-wrap{position:relative;flex:1;background:#000;overflow:hidden}
+#video,#up-prev{width:100%;height:100%;object-fit:cover;display:block}
+#up-prev{display:none;object-fit:contain;background:#000}
+
+.hud-top{position:absolute;top:0;left:0;right:0;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;z-index:10;background:linear-gradient(to bottom,rgba(0,0,0,0.6),transparent)}
+.device-badge{display:flex;align-items:center;gap:6px}
+.device-dot{width:8px;height:8px;border-radius:50%;background:var(--g);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.8)}}
+.device-name{font-size:11px;font-weight:700;letter-spacing:0.8px;opacity:0.85;text-transform:uppercase}
+.hud-right{display:flex;gap:8px;align-items:center}
+.badge-btn{background:rgba(255,255,255,0.12);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.15);color:#fff;padding:6px 14px;border-radius:20px;font-size:10px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:0.5px;transition:all 0.2s}
+.badge-btn:hover{background:rgba(255,255,255,0.2)}
+.server-indicator{display:flex;align-items:center;gap:4px;font-size:9px;font-weight:700;padding:4px 10px;border-radius:12px;text-transform:uppercase;letter-spacing:0.3px}
+.server-indicator.connected{background:rgba(0,217,126,0.2);color:var(--g)}
+.server-indicator.disconnected{background:rgba(239,68,68,0.2);color:#ef4444}
+.server-dot{width:6px;height:6px;border-radius:50%;display:inline-block}
+.server-indicator.connected .server-dot{background:var(--g);animation:pulse 2s infinite}
+.server-indicator.disconnected .server-dot{background:#ef4444}
+
+.gps-bar{position:absolute;top:52px;left:16px;right:16px;background:rgba(0,217,126,0.08);border:1px solid rgba(0,217,126,0.2);border-radius:8px;padding:6px 12px;display:flex;align-items:center;gap:8px;z-index:10}
+.gps-icon{font-size:12px;color:var(--g)}
+.gps-text{font-size:10px;color:rgba(255,255,255,0.7);font-weight:500;flex:1}
+.gps-status{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px}
+.gps-status.ok{color:var(--g)}
+.gps-status.searching{color:#fbbf24;animation:blink 1s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+
+.overlay-stamp{position:absolute;bottom:16px;left:12px;right:12px;z-index:10;pointer-events:none}
+.stamp-card{background:rgba(0,0,0,0.55);backdrop-filter:blur(20px);border:1px solid rgba(0,217,126,0.25);border-radius:14px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center}
+.stamp-left .time{font-size:28px;font-weight:800;letter-spacing:-0.5px;line-height:1}
+.stamp-left .date{font-size:10px;color:rgba(255,255,255,0.6);margin-top:3px;font-weight:500}
+.stamp-right{text-align:right}
+.stamp-right .road{font-size:12px;font-weight:700;color:var(--g);text-transform:uppercase;letter-spacing:0.3px}
+.stamp-right .city{font-size:10px;color:rgba(255,255,255,0.6);margin-top:2px}
+.stamp-right .coords{font-size:9px;color:rgba(255,255,255,0.35);margin-top:4px;font-family:monospace}
+
+.action-bar{height:110px;background:#030a06;display:flex;align-items:center;justify-content:space-between;padding:0 20px 12px;border-top:1px solid rgba(255,255,255,0.06)}
+.side-btns{display:flex;gap:10px;align-items:center}
+#shutter{width:68px;height:68px;border-radius:50%;background:conic-gradient(var(--g),var(--gd),var(--g));border:4px solid rgba(255,255,255,0.2);cursor:pointer;box-shadow:0 0 0 2px var(--gd);transition:transform 0.1s,box-shadow 0.1s;flex-shrink:0}
+#shutter:active{transform:scale(0.9);box-shadow:0 0 0 4px rgba(0,217,126,0.3)}
+.icon-btn{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:#fff;width:44px;height:44px;border-radius:50%;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s}
+.icon-btn:hover{background:rgba(255,255,255,0.14)}
+.upload-label{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.85);padding:8px 16px;border-radius:22px;font-size:10px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap}
+.bulk-label{background:var(--g);color:#000;padding:8px 16px;border-radius:22px;font-size:10px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap}
+input[type=file]{display:none}
+canvas{display:none}
+
+.sheet{position:absolute;bottom:0;left:0;right:0;background:rgba(3,10,6,0.97);backdrop-filter:blur(30px);border-top:1px solid rgba(0,217,126,0.3);border-radius:24px 24px 0 0;padding:20px;transform:translateY(100%);transition:transform 0.35s cubic-bezier(0.4,0,0.2,1);z-index:50;max-height:80vh;overflow-y:auto}
+.sheet.open{transform:translateY(0)}
+.sheet-handle{width:36px;height:4px;background:rgba(255,255,255,0.2);border-radius:2px;margin:0 auto 16px}
+.sheet-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.sheet-title{font-size:13px;font-weight:800;letter-spacing:0.8px;text-transform:uppercase;color:var(--g)}
+.close-btn{background:rgba(255,255,255,0.08);border:none;color:#fff;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center}
+.field-label{font-size:9px;color:var(--g);font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;margin-top:12px;display:block}
+.field-label:first-of-type{margin-top:0}
+.sfield{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);padding:10px 12px;border-radius:10px;color:#fff;font-size:12px;outline:none;transition:border 0.2s}
+.sfield:focus{border-color:rgba(0,217,126,0.5)}
+.row2{display:flex;gap:8px}
+.row2 .sfield{flex:1}
+select.sfield option{background:#030a06}
+.device-row{display:flex;gap:8px;margin-bottom:4px;flex-wrap:wrap}
+.dev-opt{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.7);padding:7px 12px;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer;transition:all 0.2s}
+.dev-opt.sel{background:rgba(0,217,126,0.15);border-color:var(--g);color:var(--g)}
+
+.photo-type-row{display:flex;gap:8px;margin-bottom:4px;flex-wrap:wrap}
+.photo-type-opt{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.7);padding:8px 14px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;transition:all 0.2s}
+.photo-type-opt.sel{background:rgba(0,217,126,0.15);border-color:var(--g);color:var(--g)}
+
+.server-section{background:rgba(0,217,126,0.08);border:1px solid rgba(0,217,126,0.2);border-radius:10px;padding:12px;margin:12px 0}
+.server-section .field-label{margin-top:0}
+.toggle-switch{display:flex;align-items:center;gap:10px;margin:8px 0}
+.switch{width:50px;height:28px;background:rgba(255,255,255,0.1);border-radius:14px;position:relative;cursor:pointer;border:1px solid rgba(255,255,255,0.1);transition:background 0.2s}
+.switch.on{background:rgba(0,217,126,0.3)}
+.switch-slider{position:absolute;top:2px;left:2px;width:24px;height:24px;background:#fff;border-radius:12px;transition:left 0.2s}
+.switch.on .switch-slider{left:24px}
+
+.apply-btn{width:100%;margin-top:16px;padding:13px;background:var(--g);color:#000;border:none;border-radius:12px;font-size:12px;font-weight:800;cursor:pointer;text-transform:uppercase;letter-spacing:1px}
+
+.preview-overlay{position:fixed;inset:0;background:#030a06;z-index:200;display:none;flex-direction:column;align-items:center}
+.preview-header{width:100%;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.06)}
+.preview-header span{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:rgba(255,255,255,0.5)}
+.preview-img-wrap{flex:1;width:100%;display:flex;align-items:center;justify-content:center;padding:12px;overflow:hidden}
+#result-img{max-width:100%;max-height:100%;border-radius:12px;object-fit:contain}
+.preview-actions{width:100%;padding:16px 20px 24px;display:flex;gap:10px;flex-wrap:wrap}
+.p-btn{flex:1;min-width:100px;padding:14px;border-radius:12px;border:none;font-weight:800;cursor:pointer;font-size:11px;text-transform:uppercase;letter-spacing:0.5px}
+
+.upload-status{position:fixed;top:20px;right:20px;background:rgba(0,217,126,0.9);color:#000;padding:14px 18px;border-radius:8px;font-size:11px;font-weight:700;z-index:999;display:none;align-items:center;gap:10px}
+.upload-status.show{display:flex}
+.upload-status.error{background:rgba(239,68,68,0.9);color:#fff}
+.status-spinner{width:16px;height:16px;border:2px solid rgba(0,0,0,0.2);border-top:2px solid #000;border-radius:50%;animation:spin 1s linear infinite}
+.upload-status.error .status-spinner{border-top-color:#fff}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<div id="cam-wrap">
+  <div class="hud-top">
+    <div class="device-badge">
+      <div class="device-dot"></div>
+      <span class="device-name" id="deviceLabel">iPhone 14 Pro Max</span>
+    </div>
+    <div class="hud-right">
+      <div class="server-indicator disconnected" id="serverIndicator">
+        <span class="server-dot"></span>
+        <span>OFFLINE</span>
+      </div>
+      <div class="badge-btn" onclick="toggleSheet()">⚙ Settings</div>
+    </div>
+  </div>
+
+  <div class="gps-bar" id="gpsBar">
+    <span class="gps-icon">⊙</span>
+    <span class="gps-text" id="gpsText">Acquiring location…</span>
+    <span class="gps-status searching" id="gpsStatus">Searching</span>
+  </div>
+
+  <video id="video" autoplay playsinline></video>
+  <img id="up-prev" src="" alt="Upload preview">
+
+  <div class="overlay-stamp" id="stampOverlay">
+    <div class="stamp-card">
+      <div class="stamp-left">
+        <div class="time" id="dispTime">--:--</div>
+        <div class="date" id="dispDate">---</div>
+      </div>
+      <div class="stamp-right">
+        <div class="road" id="dispRoad">Searching…</div>
+        <div class="city" id="dispCity"></div>
+        <div class="coords" id="dispCoords">0.00000° N, 0.00000° E</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sheet" id="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <span class="sheet-title">Settings</span>
+      <button class="close-btn" onclick="toggleSheet()">✕</button>
+    </div>
+
+    <span class="field-label">Device Model</span>
+    <div class="device-row" id="deviceRow">
+      <div class="dev-opt sel" onclick="setDevice(this,'iPhone 14 Pro Max')">iPhone 14 Pro Max</div>
+      <div class="dev-opt" onclick="setDevice(this,'iPhone 15 Pro')">iPhone 15 Pro</div>
+      <div class="dev-opt" onclick="setDevice(this,'Samsung S24 Ultra')">S24 Ultra</div>
+      <div class="dev-opt" onclick="setDevice(this,'Google Pixel 9 Pro')">Pixel 9 Pro</div>
+    </div>
+
+    <span class="field-label">Photo Type</span>
+    <div class="photo-type-row" id="photoTypeRow">
+      <div class="photo-type-opt sel" onclick="setPhotoType(this,'poster')">📸 Poster Photo</div>
+      <div class="photo-type-opt" onclick="setPhotoType(this,'self')">🤳 Self Photo</div>
+    </div>
+
+    <span class="field-label">Road Name</span>
+    <input type="text" id="manualRoad" class="sfield" placeholder="Road Name">
+
+    <span class="field-label">Town / City &amp; Province</span>
+    <div class="row2">
+      <input type="text" id="manualTown" class="sfield" placeholder="Town / City">
+      <input type="text" id="manualProvince" class="sfield" placeholder="Province">
+    </div>
+
+    <span class="field-label">Server Upload Settings</span>
+    <div class="server-section">
+      <div class="toggle-switch">
+        <span style="font-size:11px;font-weight:700">Upload to Server</span>
+        <div class="switch" id="serverToggle" onclick="toggleServerUpload()">
+          <div class="switch-slider"></div>
+        </div>
+      </div>
+      
+      <span class="field-label">Server URL</span>
+      <input type="text" id="serverURL" class="sfield" placeholder="http://192.168.1.100:3000" value="http://localhost:3000">
+      
+      <button class="apply-btn" style="background:rgba(0,217,126,0.2);color:var(--g);margin-top:8px" onclick="checkServerConnection()">🔗 Test Connection</button>
+    </div>
+
+    <button class="apply-btn" onclick="applySettings()">Apply Settings</button>
+  </div>
+</div>
+
+<div class="action-bar">
+  <div class="side-btns">
+    <div class="icon-btn" onclick="location.reload()" title="Reset">⟲</div>
+    <input type="file" id="fileInput" accept="image/*">
+    <label for="fileInput" class="upload-label">Upload</label>
+  </div>
+
+  <button id="shutter" onclick="takeSnapshot()"></button>
+
+  <div class="side-btns">
+    <input type="file" id="bulkInput" accept="image/*" multiple>
+    <label for="bulkInput" class="bulk-label">Bulk</label>
+    <div class="icon-btn" id="flashBtn" onclick="toggleFlash()" title="Flash toggle">⚡</div>
+  </div>
+</div>
+
+<canvas id="canvas"></canvas>
+
+<div class="preview-overlay" id="previewOverlay">
+  <div class="preview-header">
+    <span>Preview</span>
+    <div class="badge-btn" onclick="closePreview()">✕ Close</div>
+  </div>
+  <div class="preview-img-wrap">
+    <img id="result-img" src="" alt="Captured photo">
+  </div>
+  <div class="preview-actions">
+    <button class="p-btn" style="background:#1a1a1a;color:#fff" onclick="closePreview()">Retake</button>
+    <button class="p-btn" style="background:#00d97e;color:#000" id="downloadBtn">Save</button>
+    <button class="p-btn" style="background:#007aff;color:#fff" id="uploadServerBtn" style="display:none">Upload</button>
+  </div>
+</div>
+
+<div class="upload-status" id="uploadStatus">
+  <div class="status-spinner"></div>
+  <span id="statusMessage">Uploading...</span>
+</div>
+
+<script>
+const video = document.getElementById('video');
+const canvas = document.getElementById('canvas');
+const resultImg = document.getElementById('result-img');
+const previewOverlay = document.getElementById('previewOverlay');
+const fileInput = document.getElementById('fileInput');
+const bulkInput = document.getElementById('bulkInput');
+const upPrev = document.getElementById('up-prev');
+
+let currentBlob = null;
+let isUpload = false;
+let currentDevice = 'iPhone 14 Pro Max';
+let currentPhotoType = 'poster';
+let gpsCoords = '0.00000° N, 0.00000° E';
+let flashEnabled = false;
+let serverEnabled = false;
+let serverURL = 'http://localhost:3000';
+
+const themeColors = {
+  green: '#00d97e',
+  blue: '#3b82f6',
+  amber: '#f59e0b',
+  red: '#ef4444',
+  white: '#ffffff'
+};
+
+function getThemeColor() {
+  return '#00d97e';
+}
+
+function updateClock() {
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true});
+  const dateStr = now.toLocaleDateString('en-GB') + ' • ' + now.toLocaleDateString('en-GB',{weekday:'long'});
+  document.getElementById('dispTime').textContent = timeStr;
+  document.getElementById('dispDate').textContent = dateStr;
+}
+
+function setDevice(el, name) {
+  document.querySelectorAll('.dev-opt').forEach(d => d.classList.remove('sel'));
+  el.classList.add('sel');
+  currentDevice = name;
+  document.getElementById('deviceLabel').textContent = name;
+}
+
+function setPhotoType(el, type) {
+  document.querySelectorAll('.photo-type-opt').forEach(d => d.classList.remove('sel'));
+  el.classList.add('sel');
+  currentPhotoType = type;
+}
+
+function toggleSheet() {
+  document.getElementById('sheet').classList.toggle('open');
+}
+
+function toggleServerUpload() {
+  serverEnabled = !serverEnabled;
+  document.getElementById('serverToggle').classList.toggle('on');
+}
+
+async function checkServerConnection() {
+  const url = document.getElementById('serverURL').value;
+  const status = document.getElementById('uploadStatus');
+  const msg = document.getElementById('statusMessage');
+  
+  status.classList.add('show');
+  msg.textContent = 'Connecting...';
+  
+  try {
+    const response = await fetch(`${url}/api/health`);
+    if (response.ok) {
+      status.classList.remove('error');
+      msg.textContent = '✅ Connected to server!';
+      setTimeout(() => status.classList.remove('show'), 3000);
+      updateServerIndicator(true);
+    }
+  } catch (err) {
+    status.classList.add('error');
+    msg.textContent = '❌ Cannot reach server';
+    updateServerIndicator(false);
+  }
+}
+
+function updateServerIndicator(connected) {
+  const indicator = document.getElementById('serverIndicator');
+  if (connected) {
+    indicator.classList.remove('disconnected');
+    indicator.classList.add('connected');
+    indicator.innerHTML = '<span class="server-dot"></span><span>ONLINE</span>';
+  } else {
+    indicator.classList.add('disconnected');
+    indicator.classList.remove('connected');
+    indicator.innerHTML = '<span class="server-dot"></span><span>OFFLINE</span>';
+  }
+}
+
+function applySettings() {
+  serverURL = document.getElementById('serverURL').value;
+  const road = document.getElementById('manualRoad').value || 'Unknown Road';
+  const town = document.getElementById('manualTown').value;
+  const prov = document.getElementById('manualProvince').value;
+  document.getElementById('dispRoad').textContent = road.toUpperCase();
+  document.getElementById('dispCity').textContent = [town, prov].filter(Boolean).join(', ');
+  document.getElementById('deviceLabel').textContent = currentDevice;
+  
+  const uploadBtn = document.getElementById('uploadServerBtn');
+  if (serverEnabled) {
+    uploadBtn.style.display = 'block';
+  } else {
+    uploadBtn.style.display = 'none';
+  }
+  
+  toggleSheet();
+}
+
+function toggleFlash() {
+  flashEnabled = !flashEnabled;
+  const btn = document.getElementById('flashBtn');
+  btn.style.color = flashEnabled ? '#00d97e' : '#fff';
+}
+
+async function initApp() {
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  navigator.geolocation.getCurrentPosition(async pos => {
+    const lat = pos.coords.latitude.toFixed(5);
+    const lon = pos.coords.longitude.toFixed(5);
+    const latDir = pos.coords.latitude >= 0 ? 'N' : 'S';
+    const lonDir = pos.coords.longitude >= 0 ? 'E' : 'W';
+    gpsCoords = Math.abs(lat) + '° ' + latDir + ', ' + Math.abs(lon) + '° ' + lonDir;
+    document.getElementById('dispCoords').textContent = gpsCoords;
+    document.getElementById('gpsText').textContent = gpsCoords;
+    document.getElementById('gpsStatus').textContent = 'Active';
+    document.getElementById('gpsStatus').className = 'gps-status ok';
+  }, err => {
+    const msgs = {1:'GPS permission denied', 2:'GPS signal weak', 3:'GPS timeout'};
+    document.getElementById('gpsText').textContent = msgs[err.code] || 'GPS unavailable';
+    document.getElementById('gpsStatus').textContent = 'Off';
+    document.getElementById('gpsStatus').className = 'gps-status';
+  });
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:4032}}});
+    video.srcObject = stream;
+  } catch(e) {
+    console.log('Camera not available');
+  }
+}
+
+fileInput.onchange = e => {
+  if (!e.target.files[0]) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    upPrev.src = ev.target.result;
+    upPrev.style.display = 'block';
+    video.style.display = 'none';
+    isUpload = true;
+  };
+  r.readAsDataURL(e.target.files[0]);
+};
+
+function drawOverlay(ctx, tw, th) {
+  const col = getThemeColor();
+  const isLand = tw > th;
+  const bh = isLand ? th * 0.13 : th * 0.09;
+  const m = tw * 0.025;
+  const by = th - bh - tw * 0.025;
+  const bw = tw - m * 2;
+  const p = tw * 0.03;
+
+  ctx.save();
+  ctx.globalAlpha = 0.72;
+  ctx.fillStyle = '#000';
+  ctx.beginPath();
+  ctx.rect(m, by, bw, bh);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = col + '44';
+  ctx.lineWidth = Math.max(1, tw * 0.001);
+  ctx.stroke();
+  ctx.restore();
+
+  const dot = bh * 0.12;
+  ctx.beginPath();
+  ctx.arc(m + p, by + bh * 0.35, dot, 0, Math.PI * 2);
+  ctx.fillStyle = col;
+  ctx.fill();
+
+  ctx.fillStyle = '#fff';
+  ctx.textAlign = 'left';
+  ctx.font = '800 ' + (bh * 0.38) + 'px Arial';
+  ctx.fillText(document.getElementById('dispTime').textContent, m + p + dot * 2, by + bh * 0.48);
+  ctx.font = (bh * 0.17) + 'px Arial';
+  ctx.fillStyle = 'rgba(255,255,255,0.65)';
+  ctx.fillText(document.getElementById('dispDate').textContent, m + p + dot * 2, by + bh * 0.8);
+
+  ctx.textAlign = 'right';
+  const road = (document.getElementById('manualRoad').value || 'Unknown Road').toUpperCase();
+  const city = [document.getElementById('manualTown').value, document.getElementById('manualProvince').value].filter(Boolean).join(', ');
+  ctx.font = '700 ' + (bh * 0.22) + 'px Arial';
+  ctx.fillStyle = col;
+  ctx.fillText(road, tw - m - p, by + bh * 0.42);
+  ctx.font = (bh * 0.16) + 'px Arial';
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.fillText(city, tw - m - p, by + bh * 0.65);
+  ctx.font = (bh * 0.13) + 'px Arial';
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.fillText(gpsCoords, tw - m - p, by + bh * 0.88);
+
+  const wmSize = tw * 0.016;
+  ctx.textAlign = 'left';
+  ctx.font = '600 ' + wmSize + 'px Arial';
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.fillText('◉ ' + currentDevice, m, m + wmSize * 1.2);
+}
+
+function takeSnapshot() {
+  const ctx = canvas.getContext('2d');
+  let tw, th;
+  
+  if (isUpload) {
+    tw = upPrev.naturalWidth;
+    th = upPrev.naturalHeight;
+    canvas.width = tw;
+    canvas.height = th;
+    ctx.drawImage(upPrev, 0, 0, tw, th);
+  } else {
+    const sW = video.videoWidth || 1920;
+    const sH = video.videoHeight || 1080;
+    tw = sW;
+    th = sH;
+    canvas.width = tw;
+    canvas.height = th;
+    ctx.drawImage(video, 0, 0, sW, sH, 0, 0, tw, th);
+  }
+  
+  drawOverlay(ctx, tw, th);
+  
+  canvas.toBlob(b => {
+    currentBlob = b;
+    const url = URL.createObjectURL(b);
+    resultImg.src = url;
+    previewOverlay.style.display = 'flex';
+  }, 'image/jpeg', 0.97);
+}
+
+function closePreview() {
+  previewOverlay.style.display = 'none';
+}
+
+document.getElementById('downloadBtn').onclick = () => {
+  const a = document.createElement('a');
+  a.href = resultImg.src;
+  a.download = 'RoadCam_' + Date.now() + '.jpg';
+  a.click();
+};
+
+document.getElementById('uploadServerBtn').onclick = async () => {
+  if (!serverEnabled) {
+    alert('Enable server upload in settings');
+    return;
+  }
+  
+  const status = document.getElementById('uploadStatus');
+  const msg = document.getElementById('statusMessage');
+  
+  status.classList.add('show');
+  msg.textContent = 'Uploading to server...';
+  
+  try {
+    const formData = new FormData();
+    formData.append('photo', currentBlob, 'photo.jpg');
+    formData.append('type', currentPhotoType);
+    formData.append('date', new Date().toISOString().split('T')[0]);
+    formData.append('time', new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true}));
+    formData.append('timestamp', new Date().toLocaleString());
+    formData.append('location', document.getElementById('manualRoad').value || 'Unknown');
+    formData.append('device', currentDevice);
+    
+    const response = await fetch(`${serverURL}/api/upload`, {
+      method: 'POST',
+      body: formData
+    });
+    
+    if (response.ok) {
+      status.classList.remove('error');
+      msg.textContent = '✅ Uploaded to server!';
+      setTimeout(() => status.classList.remove('show'), 2000);
+      closePreview();
+    } else {
+      throw new Error('Upload failed');
+    }
+  } catch (err) {
+    status.classList.add('error');
+    msg.textContent = '❌ Upload failed: ' + err.message;
+  }
+};
+
+initApp();
+</script>
+
+</body>
+</html>
