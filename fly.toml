@@ -9,7 +9,7 @@ primary_region = 'iad'
 [build]
 
 [[mounts]]
-  source = 'data'
+  source = 'roadcam_data'
   destination = '/data'
   auto_extend_size_threshold = 80
   auto_extend_size_increment = '1GB'
