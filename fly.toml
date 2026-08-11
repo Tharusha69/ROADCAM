@@ -1,9 +1,9 @@
-# fly.toml app configuration file generated for roadcam--1v-vq on 2026-08-11T11:45:50Z
+# fly.toml app configuration file generated for roadcam on 2026-08-11T11:58:46Z
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'roadcam--1v-vq'
+app = 'roadcam'
 primary_region = 'ams'
 
 [build]
