@@ -8,17 +8,9 @@ const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Create uploads directory if it doesn't exist
-const uploadsDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir);
-}
-
-// Database setup
-const db = new sqlite3.Database(path.join(__dirname, 'roadcam.db'), (err) => {
-  if (err) console.error('Database connection failed:', err);
-  else console.log('✅ Connected to SQLite database');
-});
+// /data folder එකට point කරන්න
+const uploadsDir = path.join('/data', 'uploads');
+const db = new sqlite3.Database('/data/roadcam.db');
 
 // Create tables
 db.serialize(() => {
