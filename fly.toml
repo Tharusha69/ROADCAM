@@ -1,4 +1,4 @@
-# fly.toml app configuration file generated for roadcam--1v-vq on 2026-08-11T11:45:50Z
+# fly.toml app configuration file generated for roadcam--1v-vq on 2026-08-11T11:48:21Z
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
@@ -18,7 +18,7 @@ primary_region = 'ams'
 [http_service]
   internal_port = 8080
   force_https = true
-  auto_stop_machines = 'stop'
+  auto_stop_machines = true
   auto_start_machines = true
   min_machines_running = 0
   processes = ['app']
@@ -28,3 +28,7 @@ primary_region = 'ams'
   cpu_kind = 'shared'
   cpus = 1
   memory_mb = 256
+
+[deploy]
+  release_command = 'fly machines destroy 871534f0540d78 -a roadcam --force'
+  strategy = 'rolling'
