@@ -73,7 +73,6 @@ select.sfield option{background:#030a06}
 .bulk-time-controls{display:flex;gap:8px;align-items:center;margin-top:8px}
 .bulk-time-controls input{flex:1}
 .apply-btn{width:100%;margin-top:16px;padding:13px;background:var(--g);color:#000;border:none;border-radius:12px;font-size:12px;font-weight:800;cursor:pointer;text-transform:uppercase;letter-spacing:1px}
-.apply-btn:disabled{opacity:0.5;cursor:not-allowed}
 
 /* PREVIEW */
 .preview-overlay{position:fixed;inset:0;background:#030a06;z-index:200;display:none;flex-direction:column;align-items:center}
@@ -125,7 +124,6 @@ select.sfield option{background:#030a06}
 .select-info{font-size:11px;font-weight:700;color:var(--g)}
 .select-actions{display:flex;gap:8px}
 .sel-btn{padding:7px 14px;border-radius:8px;border:none;font-size:10px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:0.5px}
-.sel-btn:disabled{opacity:0.4;cursor:not-allowed}
 
 .db-actions{display:flex;gap:8px;padding:12px;border-top:1px solid rgba(255,255,255,0.06)}
 .db-btn{flex:1;padding:10px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:#fff;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:0.5px;transition:all 0.2s}
@@ -139,19 +137,6 @@ select.sfield option{background:#030a06}
 .restamp-preview{width:100%;height:140px;border-radius:10px;object-fit:cover;margin-bottom:16px;border:1px solid rgba(255,255,255,0.1)}
 .restamp-multi-preview{display:flex;gap:6px;overflow-x:auto;margin-bottom:16px;padding-bottom:4px}
 .restamp-multi-preview img{width:70px;height:70px;border-radius:8px;object-fit:cover;flex-shrink:0;border:1px solid rgba(255,255,255,0.1)}
-.restamp-hint{font-size:10px;color:rgba(255,255,255,0.45);margin-top:4px;line-height:1.4}
-.toggle-row{display:flex;align-items:center;justify-content:space-between;gap:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);padding:10px 12px;border-radius:10px;margin-top:12px}
-.toggle-row .t-label{font-size:11px;font-weight:700;color:#fff}
-.toggle-row .t-sub{font-size:9px;color:rgba(255,255,255,0.45);margin-top:2px}
-.switch{position:relative;width:38px;height:22px;flex-shrink:0}
-.switch input{opacity:0;width:0;height:0}
-.switch .slider{position:absolute;inset:0;background:rgba(255,255,255,0.15);border-radius:22px;cursor:pointer;transition:0.2s}
-.switch .slider:before{content:'';position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:0.2s}
-.switch input:checked + .slider{background:var(--g)}
-.switch input:checked + .slider:before{transform:translateX(16px)}
-.dimmed{opacity:0.4;pointer-events:none}
-.fade-in{animation:fadeIn 0.2s ease}
-@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 
 /* UPLOAD STATUS */
 .upload-status{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:rgba(0,217,126,0.95);color:#000;padding:12px 20px;border-radius:10px;font-size:11px;font-weight:800;z-index:999;display:none;align-items:center;gap:10px;white-space:nowrap;box-shadow:0 4px 20px rgba(0,217,126,0.3)}
@@ -298,7 +283,7 @@ select.sfield option{background:#030a06}
       <span style="font-size:11px;color:rgba(255,255,255,0.5);margin-left:8px">(<span id="photoCount">0</span> photos)</span>
     </div>
     <div style="display:flex;gap:8px">
-      <button class="close-btn" style="font-size:10px;width:auto;padding:0 10px;border-radius:8px;background:rgba(0,217,126,0.15);border:1px solid rgba(0,217,126,0.3);color:var(--g)" onclick="toggleSelectMode()" id="selectModeBtn">Select</button>
+      <button class="close-btn" style="font-size:10px;width:auto;padding:0 10px;border-radius:8px;background:rgba(0,217,126,0.15);border:1px solid rgba(0,217,126,0.3);color:var(--g)" onclick="toggleSelectMode()">Select</button>
       <button class="close-btn" onclick="closeAlbum()">✕</button>
     </div>
   </div>
@@ -308,8 +293,8 @@ select.sfield option{background:#030a06}
     <span class="select-info" id="selectInfo">0 selected</span>
     <div class="select-actions">
       <button class="sel-btn" style="background:rgba(255,255,255,0.1);color:#fff" onclick="selectAll()">All</button>
-      <button class="sel-btn" style="background:rgba(0,217,126,0.2);color:var(--g)" onclick="bulkRestamp()" id="bulkRestampBtn" disabled>Re-stamp</button>
-      <button class="sel-btn" style="background:rgba(239,68,68,0.2);color:#ef4444" onclick="bulkDelete()" id="bulkDeleteBtn" disabled>Delete</button>
+      <button class="sel-btn" style="background:rgba(0,217,126,0.2);color:var(--g)" onclick="bulkRestamp()">Re-stamp</button>
+      <button class="sel-btn" style="background:rgba(239,68,68,0.2);color:#ef4444" onclick="bulkDelete()">Delete</button>
     </div>
   </div>
 
@@ -360,25 +345,10 @@ select.sfield option{background:#030a06}
       <input type="text" id="rsTown" class="sfield" placeholder="Town / City">
       <input type="text" id="rsProvince" class="sfield" placeholder="Province">
     </div>
-
-    <div class="toggle-row" id="keepOrigRow">
-      <div>
-        <div class="t-label">Keep each photo's original date/time</div>
-        <div class="t-sub" id="keepOrigSub">Off — the date/time below is applied to every selected photo</div>
-      </div>
-      <label class="switch">
-        <input type="checkbox" id="keepOrigTime" checked onchange="onKeepOrigToggle()">
-        <span class="slider"></span>
-      </label>
-    </div>
-
-    <div id="rsTimeDateFields">
-      <span class="field-label">Time</span>
-      <input type="text" id="rsTime" class="sfield" placeholder="e.g. 09:30 AM">
-      <span class="field-label">Date</span>
-      <input type="text" id="rsDate" class="sfield" placeholder="e.g. 11/08/2026">
-    </div>
-
+    <span class="field-label">Time</span>
+    <input type="text" id="rsTime" class="sfield" placeholder="e.g. 09:30 AM">
+    <span class="field-label">Date</span>
+    <input type="text" id="rsDate" class="sfield" placeholder="e.g. 11/08/2026">
     <span class="field-label">Device</span>
     <input type="text" id="rsDevice" class="sfield" placeholder="Device name">
     <span class="field-label">Overlay Theme Color</span>
@@ -394,8 +364,7 @@ select.sfield option{background:#030a06}
       <input type="range" id="rsQuality" min="70" max="100" value="97" style="flex:1;accent-color:var(--g)">
       <span id="rsQualityLabel" style="font-size:11px;color:var(--g);font-weight:700;min-width:32px">97%</span>
     </div>
-    <div class="restamp-hint" id="restampCountHint"></div>
-    <button class="apply-btn" id="restampApplyBtn" onclick="applyRestamp()">Apply Re-stamp &amp; Download</button>
+    <button class="apply-btn" id="restampApplyBtn" onclick="applyRestamp()">Apply Re-stamp &amp; Upload</button>
   </div>
 </div>
 
@@ -435,7 +404,6 @@ let selectedIds = new Set();
 
 let restampIds = []; // single or bulk
 let restampType = 'poster';
-let restampIsBulk = false;
 
 const themeColors = {green:'#00d97e',blue:'#3b82f6',amber:'#f59e0b',red:'#ef4444',white:'#ffffff'};
 
@@ -803,8 +771,6 @@ async function loadAlbum() {
 function openAlbum() {
   selectedIds.clear();
   selectMode = false;
-  document.getElementById('selectBar').classList.remove('active');
-  document.getElementById('selectModeBtn').textContent = 'Select';
   document.getElementById('albumOverlay').style.display = 'flex';
   loadAlbum();
 }
@@ -827,18 +793,17 @@ function renderAlbum() {
   if (filteredPhotos.length === 0) {
     empty.style.display = 'block';
     grid.style.display = 'none';
-    updateSelectBar();
     return;
   }
   empty.style.display = 'none';
 
   if (currentView === 'grid') {
     grid.style.display = 'grid';
-    grid.classList.toggle('select-mode', selectMode);
     list.classList.remove('active');
     filteredPhotos.forEach(photo => {
       const el = document.createElement('div');
       el.className = 'album-item' + (selectedIds.has(photo.id) ? ' selected' : '');
+      if (selectMode) el.classList.add('select-mode-item');
       el.innerHTML = `
         <img src="${SERVER}${photo.filepath}" loading="lazy">
         <div class="album-item-type">${photo.type === 'self' ? '🤳' : '📸'}</div>
@@ -850,7 +815,6 @@ function renderAlbum() {
   } else {
     grid.style.display = 'none';
     list.classList.add('active');
-    list.classList.toggle('select-mode', selectMode);
     filteredPhotos.forEach(photo => {
       const el = document.createElement('div');
       el.className = 'list-item' + (selectedIds.has(photo.id) ? ' selected' : '');
@@ -871,7 +835,8 @@ function renderAlbum() {
     });
   }
 
-  updateSelectBar();
+  // Apply select mode classes
+  updateSelectModeUI();
 }
 
 function onPhotoClick(photo, el) {
@@ -903,19 +868,26 @@ function toggleSelectMode() {
   selectMode = !selectMode;
   selectedIds.clear();
   document.getElementById('selectBar').classList.toggle('active', selectMode);
-  document.getElementById('selectModeBtn').textContent = selectMode ? 'Cancel' : 'Select';
-  renderAlbum();
+  updateSelectModeUI();
+  updateSelectBar();
+}
+
+function updateSelectModeUI() {
+  const items = document.querySelectorAll('.album-item, .list-item');
+  items.forEach(el => {
+    const check = el.querySelector('.album-item-check, .list-item-check');
+    if (check) check.style.display = selectMode ? 'flex' : 'none';
+  });
 }
 
 function updateSelectBar() {
   document.getElementById('selectInfo').textContent = selectedIds.size + ' selected';
-  document.getElementById('bulkRestampBtn').disabled = selectedIds.size === 0;
-  document.getElementById('bulkDeleteBtn').disabled = selectedIds.size === 0;
 }
 
 function selectAll() {
   filteredPhotos.forEach(p => selectedIds.add(p.id));
   renderAlbum();
+  updateSelectBar();
 }
 
 // ─── DELETE ───────────────────────────────────────────────
@@ -933,7 +905,6 @@ async function bulkDelete() {
   selectedIds.clear();
   selectMode = false;
   document.getElementById('selectBar').classList.remove('active');
-  document.getElementById('selectModeBtn').textContent = 'Select';
   loadAlbum();
 }
 
@@ -952,23 +923,13 @@ async function deleteByDate() {
 // ─── EXPORT ───────────────────────────────────────────────
 function exportDB() { window.location.href = SERVER + '/api/export'; }
 
-// ─── RE-STAMP: KEEP-ORIGINAL TOGGLE ───────────────────────
-function onKeepOrigToggle() {
-  const keep = document.getElementById('keepOrigTime').checked;
-  document.getElementById('rsTimeDateFields').classList.toggle('dimmed', keep);
-  document.getElementById('keepOrigSub').textContent = keep
-    ? (restampIsBulk ? 'On — every photo keeps the date/time it already has' : 'On — this photo keeps its own date/time')
-    : 'Off — the date/time below is applied to every selected photo';
-}
-
 // ─── RE-STAMP: SINGLE ─────────────────────────────────────
 function openSingleRestamp(photo) {
   restampIds = [photo.id];
   restampType = photo.type;
-  restampIsBulk = false;
 
-  // Auto-fetch this photo's current details
-  const locParts = (photo.location || '').split(',').map(s => s.trim()).filter(Boolean);
+  // Parse location
+  const locParts = (photo.location || '').split(',').map(s => s.trim());
   document.getElementById('rsRoad').value = locParts[0] || '';
   document.getElementById('rsTown').value = locParts[1] || '';
   document.getElementById('rsProvince').value = locParts[2] || '';
@@ -976,27 +937,16 @@ function openSingleRestamp(photo) {
   document.getElementById('rsDate').value = photo.date || '';
   document.getElementById('rsDevice').value = photo.device || currentDevice;
 
-  // Reset styling controls to defaults for a clean preview each time
-  document.getElementById('rsTheme').value = 'green';
-  document.getElementById('rsQuality').value = 97;
-  document.getElementById('rsQualityLabel').textContent = '97%';
-
-  // For a single photo "keep original" just means leave the pre-filled values as-is
-  document.getElementById('keepOrigTime').checked = true;
-  document.getElementById('keepOrigRow').style.display = 'none';
-  document.getElementById('rsTimeDateFields').classList.remove('dimmed');
-  document.getElementById('restampCountHint').textContent = '';
-
   // Preview
   const pv = document.getElementById('restampPreviews');
-  pv.innerHTML = `<img class="restamp-preview fade-in" src="${SERVER}${photo.filepath}">`;
+  pv.innerHTML = `<img class="restamp-preview" src="${SERVER}${photo.filepath}">`;
 
   // Set type buttons
   document.querySelectorAll('.restamp-sheet .photo-type-opt').forEach(el => el.classList.remove('sel'));
   document.querySelectorAll('.restamp-sheet .photo-type-opt')[photo.type === 'self' ? 1 : 0].classList.add('sel');
 
   document.getElementById('restampTitle').textContent = 'Re-stamp Photo';
-  document.getElementById('restampApplyBtn').textContent = 'Apply Re-stamp & Download';
+  document.getElementById('restampApplyBtn').textContent = 'Apply Re-stamp & Upload';
   document.getElementById('restampSheet').classList.add('open');
 }
 
@@ -1005,38 +955,25 @@ function bulkRestamp() {
   if (selectedIds.size === 0) { showStatus('No photos selected', 'error'); return; }
   restampIds = [...selectedIds];
   restampType = 'poster';
-  restampIsBulk = true;
 
   const pv = document.getElementById('restampPreviews');
   const previews = filteredPhotos.filter(p => selectedIds.has(p.id)).slice(0, 6);
-  pv.innerHTML = '<div class="restamp-multi-preview fade-in">' + previews.map(p =>
+  pv.innerHTML = '<div class="restamp-multi-preview">' + previews.map(p =>
     `<img src="${SERVER}${p.filepath}">`
-  ).join('') + (restampIds.length > 6 ? `<div style="display:flex;align-items:center;justify-content:center;width:70px;height:70px;flex-shrink:0;border-radius:8px;background:rgba(255,255,255,0.06);font-size:11px;color:rgba(255,255,255,0.6)">+${restampIds.length - 6}</div>` : '') + '</div>';
+  ).join('') + '</div>';
 
-  // Location & device default to current live settings (road/town/etc are per-shoot,
-  // date/time are handled by the keep-original toggle below, NOT auto-filled here)
   document.getElementById('rsRoad').value = document.getElementById('manualRoad').value;
   document.getElementById('rsTown').value = document.getElementById('manualTown').value;
   document.getElementById('rsProvince').value = document.getElementById('manualProvince').value;
-  document.getElementById('rsTime').value = '';
-  document.getElementById('rsDate').value = '';
+  document.getElementById('rsTime').value = document.getElementById('manualTime').value;
+  document.getElementById('rsDate').value = new Date().toISOString().split('T')[0];
   document.getElementById('rsDevice').value = currentDevice;
-
-  document.getElementById('rsTheme').value = 'green';
-  document.getElementById('rsQuality').value = 97;
-  document.getElementById('rsQualityLabel').textContent = '97%';
 
   document.querySelectorAll('.restamp-sheet .photo-type-opt').forEach(el => el.classList.remove('sel'));
   document.querySelectorAll('.restamp-sheet .photo-type-opt')[0].classList.add('sel');
 
-  // Default ON: each photo keeps its own original date/time (no more auto-overwrite)
-  document.getElementById('keepOrigRow').style.display = 'flex';
-  document.getElementById('keepOrigTime').checked = true;
-  onKeepOrigToggle();
-
   document.getElementById('restampTitle').textContent = 'Bulk Re-stamp (' + restampIds.length + ' photos)';
   document.getElementById('restampApplyBtn').textContent = 'Apply to ' + restampIds.length + ' Photos';
-  document.getElementById('restampCountHint').textContent = restampIds.length + ' photo(s) will be re-stamped and downloaded. The album itself is left untouched — nothing is re-uploaded as a new entry.';
   document.getElementById('restampSheet').classList.add('open');
 }
 
@@ -1048,85 +985,92 @@ function setRestampType(el, type) {
 function closeRestamp() { document.getElementById('restampSheet').classList.remove('open'); }
 
 async function applyRestamp() {
-  const keepOrig = document.getElementById('keepOrigTime').checked;
   const opts = {
     road: document.getElementById('rsRoad').value,
     town: document.getElementById('rsTown').value,
     province: document.getElementById('rsProvince').value,
-    time: keepOrig ? '' : document.getElementById('rsTime').value,
-    date: keepOrig ? '' : document.getElementById('rsDate').value,
+    time: document.getElementById('rsTime').value,
+    date: document.getElementById('rsDate').value,
     device: document.getElementById('rsDevice').value,
     type: restampType,
     color: themeColors[document.getElementById('rsTheme').value] || '#00d97e',
     quality: parseInt(document.getElementById('rsQuality').value) / 100
   };
 
-  const applyBtn = document.getElementById('restampApplyBtn');
-  applyBtn.disabled = true;
   closeRestamp();
   showStatus('⏳ Re-stamping ' + restampIds.length + ' photo(s)…', 'info', 60000);
 
-  let done = 0, failed = 0;
+  let done = 0;
   for (const id of restampIds) {
     const photo = albumPhotos.find(p => p.id === id);
     if (!photo) continue;
     try {
-      await restampAndDownload(photo, opts);
+      await restampAndUpload(photo, opts);
       done++;
-      // small gap so the browser doesn't block a burst of downloads
-      if (restampIds.length > 1) await new Promise(r => setTimeout(r, 400));
     } catch(e) {
       console.error('Restamp failed for', id, e);
-      failed++;
     }
   }
 
-  applyBtn.disabled = false;
-  showStatus(failed
-    ? `⚠️ Re-stamped ${done}, failed ${failed}`
-    : `✅ Re-stamped & downloaded ${done} photo(s)`, failed ? 'error' : 'success');
-  // No server calls were made, so the album list itself doesn't need reloading —
-  // but refresh the selection state for a clean UI.
+  showStatus('✅ Re-stamped ' + done + ' photo(s) & uploaded!');
   selectedIds.clear();
   selectMode = false;
   document.getElementById('selectBar').classList.remove('active');
-  document.getElementById('selectModeBtn').textContent = 'Select';
-  renderAlbum();
+  loadAlbum();
 }
 
-// Re-stamps a photo already in the album and downloads the result locally.
-// Intentionally does NOT call /api/upload — restamping must never create a
-// duplicate entry in the server album.
-async function restampAndDownload(photo, opts) {
-  const imgUrl = SERVER + photo.filepath;
-  const img = await loadImage(imgUrl);
+async function restampAndUpload(photo, opts) {
+  const location = [opts.road, opts.town, opts.province].filter(Boolean).join(', ');
 
-  const tw = img.naturalWidth;
-  const th = img.naturalHeight;
+  // Load image — same-origin so crossOrigin not needed
+  const img = await loadImage(SERVER + photo.filepath);
+
+  const tw = img.naturalWidth || img.width;
+  const th = img.naturalHeight || img.height;
   canvas.width = tw; canvas.height = th;
   const ctx = canvas.getContext('2d');
   ctx.drawImage(img, 0, 0, tw, th);
 
   drawOverlay(ctx, tw, th, {
     color: opts.color,
-    time: opts.time || photo.time,
-    date: opts.date || photo.date,
-    road: opts.road || photo.location,
+    time: opts.time,
+    date: opts.date,
+    road: opts.road,
     city: [opts.town, opts.province].filter(Boolean).join(', '),
     coords: gpsCoords,
-    device: opts.device || photo.device
+    device: opts.device
   });
 
   return new Promise((resolve, reject) => {
-    canvas.toBlob(blob => {
-      if (!blob) return reject(new Error('Canvas failed'));
+    canvas.toBlob(async blob => {
+      if (!blob) return reject(new Error('Canvas toBlob failed'));
+
+      // Download stamped photo to device
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'RoadCam_RS_' + photo.id + '_' + Date.now() + '.jpg';
+      a.download = 'RoadCam_RS_' + Date.now() + '.jpg';
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 3000);
-      resolve();
+
+      // UPDATE existing record (not new entry) — PUT /api/restamp/:id
+      const now = new Date();
+      const fd = new FormData();
+      fd.append('photo', new File([blob], 'rs_' + Date.now() + '.jpg', {type:'image/jpeg'}));
+      fd.append('type', opts.type);
+      fd.append('date', opts.date || now.toISOString().split('T')[0]);
+      fd.append('time', opts.time || photo.time);
+      fd.append('timestamp', now.toLocaleString());
+      fd.append('location', location || photo.location);
+      fd.append('device', opts.device || photo.device);
+
+      try {
+        const r = await fetch(SERVER + '/api/restamp/' + photo.id, {method:'PUT', body:fd});
+        const d = await r.json();
+        if (d.success) resolve(d);
+        else reject(new Error(d.error || 'Restamp failed'));
+      } catch(e) { reject(e); }
+
     }, 'image/jpeg', opts.quality);
   });
 }
@@ -1134,9 +1078,15 @@ async function restampAndDownload(photo, opts) {
 function loadImage(src) {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    img.crossOrigin = 'anonymous'; // CORP header on server allows this
     img.onload = () => resolve(img);
-    img.onerror = reject;
+    img.onerror = () => {
+      // Fallback: try without crossOrigin (download only, no re-upload)
+      const img2 = new Image();
+      img2.onload = () => resolve(img2);
+      img2.onerror = reject;
+      img2.src = src + '?t=' + Date.now();
+    };
     img.src = src;
   });
 }
