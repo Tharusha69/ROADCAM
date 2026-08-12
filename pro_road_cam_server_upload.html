@@ -345,8 +345,16 @@ select.sfield option{background:#030a06}
       <input type="text" id="rsTown" class="sfield" placeholder="Town / City">
       <input type="text" id="rsProvince" class="sfield" placeholder="Province">
     </div>
-    <span class="field-label">Time</span>
-    <input type="text" id="rsTime" class="sfield" placeholder="e.g. 09:30 AM">
+    <!-- Single photo: manual time -->
+    <div id="rsTimeRow">
+      <span class="field-label">Time</span>
+      <input type="text" id="rsTime" class="sfield" placeholder="e.g. 09:30 AM">
+    </div>
+    <!-- Bulk: start time → auto distribute to now -->
+    <div id="rsBulkTimeRow" style="display:none">
+      <span class="field-label">Bulk Start Time (distributes evenly to now)</span>
+      <input type="time" id="rsBulkStart" class="sfield" value="09:00">
+    </div>
     <span class="field-label">Date</span>
     <input type="text" id="rsDate" class="sfield" placeholder="e.g. 11/08/2026">
     <span class="field-label">Device</span>
@@ -945,14 +953,20 @@ function openSingleRestamp(photo) {
   document.querySelectorAll('.restamp-sheet .photo-type-opt').forEach(el => el.classList.remove('sel'));
   document.querySelectorAll('.restamp-sheet .photo-type-opt')[photo.type === 'self' ? 1 : 0].classList.add('sel');
 
+  isBulkRestamp = false;
+  document.getElementById('rsBulkTimeRow').style.display = 'none';
+  document.getElementById('rsTimeRow').style.display = 'block';
   document.getElementById('restampTitle').textContent = 'Re-stamp Photo';
-  document.getElementById('restampApplyBtn').textContent = 'Apply Re-stamp & Upload';
+  document.getElementById('restampApplyBtn').textContent = 'Apply Re-stamp & Save';
   document.getElementById('restampSheet').classList.add('open');
 }
 
 // ─── RE-STAMP: BULK ───────────────────────────────────────
+let isBulkRestamp = false;
+
 function bulkRestamp() {
   if (selectedIds.size === 0) { showStatus('No photos selected', 'error'); return; }
+  isBulkRestamp = true;
   restampIds = [...selectedIds];
   restampType = 'poster';
 
@@ -965,9 +979,14 @@ function bulkRestamp() {
   document.getElementById('rsRoad').value = document.getElementById('manualRoad').value;
   document.getElementById('rsTown').value = document.getElementById('manualTown').value;
   document.getElementById('rsProvince').value = document.getElementById('manualProvince').value;
-  document.getElementById('rsTime').value = document.getElementById('manualTime').value;
+  // time field — show start time hint only, actual times distributed on apply
+  document.getElementById('rsTime').value = document.getElementById('bulkStartTime').value || '09:00';
   document.getElementById('rsDate').value = new Date().toISOString().split('T')[0];
   document.getElementById('rsDevice').value = currentDevice;
+
+  // Show bulk start-time row
+  document.getElementById('rsBulkTimeRow').style.display = 'block';
+  document.getElementById('rsTimeRow').style.display = 'none';
 
   document.querySelectorAll('.restamp-sheet .photo-type-opt').forEach(el => el.classList.remove('sel'));
   document.querySelectorAll('.restamp-sheet .photo-type-opt')[0].classList.add('sel');
@@ -985,11 +1004,10 @@ function setRestampType(el, type) {
 function closeRestamp() { document.getElementById('restampSheet').classList.remove('open'); }
 
 async function applyRestamp() {
-  const opts = {
+  const baseOpts = {
     road: document.getElementById('rsRoad').value,
     town: document.getElementById('rsTown').value,
     province: document.getElementById('rsProvince').value,
-    time: document.getElementById('rsTime').value,
     date: document.getElementById('rsDate').value,
     device: document.getElementById('rsDevice').value,
     type: restampType,
@@ -997,13 +1015,42 @@ async function applyRestamp() {
     quality: parseInt(document.getElementById('rsQuality').value) / 100
   };
 
+  // ── Bulk: distribute times evenly start → now ──────────────
+  let timeSlots = [];
+  if (isBulkRestamp && restampIds.length > 1) {
+    const startStr = document.getElementById('rsBulkStart').value || '09:00';
+    const [sh, sm] = startStr.split(':').map(Number);
+    const startMins = sh * 60 + sm;
+    const now = new Date();
+    const endMins = now.getHours() * 60 + now.getMinutes();
+    let range = endMins - startMins;
+    if (range <= 0) range += 1440;
+    const n = restampIds.length;
+    const interval = n > 1 ? Math.floor(range / (n - 1)) : 0;
+    for (let i = 0; i < n; i++) {
+      let mins = startMins + i * interval;
+      if (mins >= 1440) mins -= 1440;
+      const h = Math.floor(mins / 60) % 24;
+      const m = mins % 60;
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      const dh = h > 12 ? h - 12 : h === 0 ? 12 : h;
+      timeSlots.push(dh.toString().padStart(2,'0') + ':' + m.toString().padStart(2,'0') + ' ' + ampm);
+    }
+  } else {
+    // Single — use typed time
+    const t = document.getElementById('rsTime').value;
+    timeSlots = restampIds.map(() => t);
+  }
+
   closeRestamp();
   showStatus('⏳ Re-stamping ' + restampIds.length + ' photo(s)…', 'info', 60000);
 
   let done = 0;
-  for (const id of restampIds) {
+  for (let i = 0; i < restampIds.length; i++) {
+    const id = restampIds[i];
     const photo = albumPhotos.find(p => p.id === id);
     if (!photo) continue;
+    const opts = { ...baseOpts, time: timeSlots[i] };
     try {
       await restampAndUpload(photo, opts);
       done++;
@@ -1012,17 +1059,16 @@ async function applyRestamp() {
     }
   }
 
-  showStatus('✅ Re-stamped ' + done + ' photo(s) & uploaded!');
+  showStatus('✅ Re-stamped ' + done + ' photo(s)!');
   selectedIds.clear();
   selectMode = false;
+  isBulkRestamp = false;
   document.getElementById('selectBar').classList.remove('active');
   loadAlbum();
 }
 
 async function restampAndUpload(photo, opts) {
   const location = [opts.road, opts.town, opts.province].filter(Boolean).join(', ');
-
-  // Load image — same-origin so crossOrigin not needed
   const img = await loadImage(SERVER + photo.filepath);
 
   const tw = img.naturalWidth || img.width;
@@ -1045,7 +1091,7 @@ async function restampAndUpload(photo, opts) {
     canvas.toBlob(async blob => {
       if (!blob) return reject(new Error('Canvas toBlob failed'));
 
-      // Download stamped photo to device
+      // Bulk: auto-download each stamped photo | Single: download single file
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -1053,7 +1099,7 @@ async function restampAndUpload(photo, opts) {
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 3000);
 
-      // UPDATE existing record (not new entry) — PUT /api/restamp/:id
+      // UPDATE existing record in DB — no new entry
       const now = new Date();
       const fd = new FormData();
       fd.append('photo', new File([blob], 'rs_' + Date.now() + '.jpg', {type:'image/jpeg'}));
