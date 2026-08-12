@@ -138,6 +138,10 @@ select.sfield option{background:#030a06}
 .restamp-multi-preview{display:flex;gap:6px;overflow-x:auto;margin-bottom:16px;padding-bottom:4px}
 .restamp-multi-preview img{width:70px;height:70px;border-radius:8px;object-fit:cover;flex-shrink:0;border:1px solid rgba(255,255,255,0.1)}
 
+/* AUTO-FILL BADGE */
+.autofill-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(0,217,126,0.12);border:1px solid rgba(0,217,126,0.3);color:var(--g);padding:3px 8px;border-radius:6px;font-size:9px;font-weight:700;letter-spacing:0.5px;margin-bottom:10px}
+.autofill-badge span{font-size:11px}
+
 /* UPLOAD STATUS */
 .upload-status{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:rgba(0,217,126,0.95);color:#000;padding:12px 20px;border-radius:10px;font-size:11px;font-weight:800;z-index:999;display:none;align-items:center;gap:10px;white-space:nowrap;box-shadow:0 4px 20px rgba(0,217,126,0.3)}
 .upload-status.show{display:flex}
@@ -331,6 +335,12 @@ select.sfield option{background:#030a06}
       <span class="sheet-title" id="restampTitle">Re-stamp Photo</span>
       <button class="close-btn" onclick="closeRestamp()">✕</button>
     </div>
+
+    <!-- Auto-fill indicator badge -->
+    <div class="autofill-badge" id="autofillBadge">
+      <span>⊙</span> Live GPS + Current Time Auto-filled
+    </div>
+
     <div id="restampPreviews"></div>
 
     <span class="field-label">Photo Type</span>
@@ -356,7 +366,7 @@ select.sfield option{background:#030a06}
       <input type="time" id="rsBulkStart" class="sfield" value="09:00">
     </div>
     <span class="field-label">Date</span>
-    <input type="text" id="rsDate" class="sfield" placeholder="e.g. 11/08/2026">
+    <input type="text" id="rsDate" class="sfield" placeholder="e.g. 12/08/2026">
     <span class="field-label">Device</span>
     <input type="text" id="rsDevice" class="sfield" placeholder="Device name">
     <span class="field-label">Overlay Theme Color</span>
@@ -381,39 +391,57 @@ select.sfield option{background:#030a06}
 
 <script>
 // ─── CONFIG ───────────────────────────────────────────────
-const SERVER = window.location.origin; // auto-detect fly.io URL
+const SERVER = window.location.origin;
 
 // ─── STATE ────────────────────────────────────────────────
-const video = document.getElementById('video');
-const canvas = document.getElementById('canvas');
-const resultImg = document.getElementById('result-img');
+const video        = document.getElementById('video');
+const canvas       = document.getElementById('canvas');
+const resultImg    = document.getElementById('result-img');
 const previewOverlay = document.getElementById('previewOverlay');
-const fileInput = document.getElementById('fileInput');
-const bulkInput = document.getElementById('bulkInput');
-const upPrev = document.getElementById('up-prev');
-const qualitySlider = document.getElementById('jpegQuality');
+const fileInput    = document.getElementById('fileInput');
+const bulkInput    = document.getElementById('bulkInput');
+const upPrev       = document.getElementById('up-prev');
+const qualitySlider= document.getElementById('jpegQuality');
 const qualityLabel = document.getElementById('qualityLabel');
 
-let currentBlob = null;
-let originalBlob = null; // original photo (no stamp)
-let isUpload = false;
-let currentDevice = 'iPhone 14 Pro Max';
+let currentBlob    = null;
+let originalBlob   = null;
+let isUpload       = false;
+let currentDevice  = 'iPhone 14 Pro Max';
 let currentPhotoType = 'poster';
-let gpsCoords = '0.00000° N, 0.00000° E';
-let flashEnabled = false;
-let serverOnline = false;
+let gpsCoords      = '0.00000° N, 0.00000° E';
+let flashEnabled   = false;
+let serverOnline   = false;
 
-let albumPhotos = []; // from server
+let albumPhotos    = [];
 let filteredPhotos = [];
-let currentFilter = 'all';
-let currentView = 'grid';
-let selectMode = false;
-let selectedIds = new Set();
+let currentFilter  = 'all';
+let currentView    = 'grid';
+let selectMode     = false;
+let selectedIds    = new Set();
 
-let restampIds = []; // single or bulk
-let restampType = 'poster';
+let restampIds     = [];
+let restampType    = 'poster';
+let isBulkRestamp  = false;
 
-const themeColors = {green:'#00d97e',blue:'#3b82f6',amber:'#f59e0b',red:'#ef4444',white:'#ffffff'};
+const themeColors  = {green:'#00d97e',blue:'#3b82f6',amber:'#f59e0b',red:'#ef4444',white:'#ffffff'};
+
+// ─── HELPERS ──────────────────────────────────────────────
+// Returns "HH:MM AM/PM" for a given Date (or now if omitted)
+function formatTime12(date) {
+  date = date || new Date();
+  const h    = date.getHours();
+  const m    = date.getMinutes();
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const dh   = h > 12 ? h - 12 : h === 0 ? 12 : h;
+  return dh.toString().padStart(2,'0') + ':' + m.toString().padStart(2,'0') + ' ' + ampm;
+}
+
+// Returns "DD/MM/YYYY" for a given Date (or now if omitted)
+function formatDateDMY(date) {
+  date = date || new Date();
+  return date.toLocaleDateString('en-GB'); // DD/MM/YYYY
+}
 
 // ─── TOAST ────────────────────────────────────────────────
 function showStatus(msg, type='success', ms=2800) {
@@ -440,13 +468,13 @@ async function checkServer() {
 
 // ─── CLOCK ────────────────────────────────────────────────
 function updateClock() {
-  const now = new Date();
+  const now     = new Date();
   const timeStr = now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true});
   const dateStr = now.toLocaleDateString('en-GB') + ' • ' + now.toLocaleDateString('en-GB',{weekday:'long'});
-  document.getElementById('dispTime').textContent = timeStr;
-  document.getElementById('dispDate').textContent = dateStr;
-  document.getElementById('manualTime').value = timeStr;
-  document.getElementById('manualDate').value = now.toLocaleDateString('en-GB') + ' | ' + now.toLocaleDateString('en-GB',{weekday:'long'});
+  document.getElementById('dispTime').textContent    = timeStr;
+  document.getElementById('dispDate').textContent    = dateStr;
+  document.getElementById('manualTime').value        = timeStr;
+  document.getElementById('manualDate').value        = now.toLocaleDateString('en-GB') + ' | ' + now.toLocaleDateString('en-GB',{weekday:'long'});
 }
 
 // ─── SETTINGS ─────────────────────────────────────────────
@@ -460,12 +488,14 @@ function getThemeColor() {
 }
 function setDevice(el, name) {
   document.querySelectorAll('.dev-opt').forEach(d => d.classList.remove('sel'));
-  el.classList.add('sel'); currentDevice = name;
+  el.classList.add('sel');
+  currentDevice = name;
   document.getElementById('deviceLabel').textContent = name;
 }
 function setPhotoType(el, type) {
   document.querySelectorAll('.photo-type-opt').forEach(d => d.classList.remove('sel'));
-  el.classList.add('sel'); currentPhotoType = type;
+  el.classList.add('sel');
+  currentPhotoType = type;
 }
 function toggleSheet() { document.getElementById('sheet').classList.toggle('open'); }
 function applySettings() {
@@ -483,7 +513,7 @@ function applySettings() {
 function toggleFlash() {
   flashEnabled = !flashEnabled;
   const btn = document.getElementById('flashBtn');
-  btn.style.color = flashEnabled ? '#00d97e' : '#fff';
+  btn.style.color       = flashEnabled ? '#00d97e' : '#fff';
   btn.style.borderColor = flashEnabled ? '#00d97e' : 'rgba(255,255,255,0.1)';
 }
 
@@ -495,37 +525,37 @@ async function initApp() {
   setInterval(checkServer, 30000);
 
   navigator.geolocation.getCurrentPosition(async pos => {
-    const lat = pos.coords.latitude.toFixed(5);
-    const lon = pos.coords.longitude.toFixed(5);
-    const latDir = pos.coords.latitude >= 0 ? 'N' : 'S';
+    const lat    = pos.coords.latitude.toFixed(5);
+    const lon    = pos.coords.longitude.toFixed(5);
+    const latDir = pos.coords.latitude  >= 0 ? 'N' : 'S';
     const lonDir = pos.coords.longitude >= 0 ? 'E' : 'W';
     gpsCoords = Math.abs(lat) + '° ' + latDir + ', ' + Math.abs(lon) + '° ' + lonDir;
     document.getElementById('dispCoords').textContent = gpsCoords;
-    document.getElementById('gpsText').textContent = gpsCoords;
-    document.getElementById('gpsStatus').textContent = 'Active';
-    document.getElementById('gpsStatus').className = 'gps-status ok';
+    document.getElementById('gpsText').textContent    = gpsCoords;
+    document.getElementById('gpsStatus').textContent  = 'Active';
+    document.getElementById('gpsStatus').className    = 'gps-status ok';
     try {
       const r = await fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat='+lat+'&lon='+lon);
       const d = await r.json();
       const a = d.address || {};
       const road = a.road || a.suburb || 'Unnamed Road';
-      const city = a.city || a.town || a.village || '';
+      const city = a.city  || a.town  || a.village || '';
       const prov = a.state || '';
-      document.getElementById('manualRoad').value = road;
-      document.getElementById('manualTown').value = city;
+      document.getElementById('manualRoad').value     = road;
+      document.getElementById('manualTown').value     = city;
       document.getElementById('manualProvince').value = prov;
       document.getElementById('dispRoad').textContent = road.toUpperCase();
       document.getElementById('dispCity').textContent = [city,prov].filter(Boolean).join(', ');
-      document.getElementById('gpsText').textContent = road + (city ? ', '+city : '');
+      document.getElementById('gpsText').textContent  = road + (city ? ', '+city : '');
     } catch(e) {
       document.getElementById('dispRoad').textContent = 'GPS ACTIVE';
     }
   }, err => {
     const msgs = {1:'GPS denied',2:'Signal weak',3:'GPS timeout'};
-    document.getElementById('gpsText').textContent = msgs[err.code] || 'GPS unavailable';
+    document.getElementById('gpsText').textContent   = msgs[err.code] || 'GPS unavailable';
     document.getElementById('gpsStatus').textContent = 'Off';
-    document.getElementById('gpsStatus').className = 'gps-status';
-  }, {enableHighAccuracy:true,timeout:10000,maximumAge:0});
+    document.getElementById('gpsStatus').className   = 'gps-status';
+  }, {enableHighAccuracy:true, timeout:10000, maximumAge:0});
 
   try {
     const stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:4032}}});
@@ -542,7 +572,7 @@ fileInput.onchange = e => {
   r.onload = ev => {
     upPrev.src = ev.target.result;
     upPrev.style.display = 'block';
-    video.style.display = 'none';
+    video.style.display  = 'none';
     isUpload = true;
   };
   r.readAsDataURL(e.target.files[0]);
@@ -553,13 +583,13 @@ bulkInput.onchange = async e => {
   const files = e.target.files;
   if (!files.length) return;
   const startTimeStr = document.getElementById('bulkStartTime').value || '09:00';
-  const [sh, sm] = startTimeStr.split(':').map(Number);
-  const startMins = sh * 60 + sm;
-  const now = new Date();
-  const endMins = now.getHours() * 60 + now.getMinutes();
-  let range = endMins - startMins;
+  const [sh, sm]     = startTimeStr.split(':').map(Number);
+  const startMins    = sh * 60 + sm;
+  const now          = new Date();
+  const endMins      = now.getHours() * 60 + now.getMinutes();
+  let range          = endMins - startMins;
   if (range < 0) range += 1440;
-  const n = files.length;
+  const n        = files.length;
   const interval = n > 1 ? Math.floor(range / (n - 1)) : 0;
 
   showStatus('⏳ Bulk uploading ' + n + ' photos…', 'info', 60000);
@@ -567,10 +597,10 @@ bulkInput.onchange = async e => {
   for (let i = 0; i < n; i++) {
     let mins = startMins + i * interval;
     if (mins >= 1440) mins -= 1440;
-    const h = Math.floor(mins / 60) % 24;
-    const m = mins % 60;
+    const h    = Math.floor(mins / 60) % 24;
+    const m    = mins % 60;
     const ampm = h >= 12 ? 'PM' : 'AM';
-    const dh = h > 12 ? h-12 : h === 0 ? 12 : h;
+    const dh   = h > 12 ? h-12 : h === 0 ? 12 : h;
     document.getElementById('manualTime').value = dh.toString().padStart(2,'0') + ':' + m.toString().padStart(2,'0') + ' ' + ampm;
 
     await new Promise(res => {
@@ -578,7 +608,7 @@ bulkInput.onchange = async e => {
       r.onload = ev => {
         upPrev.src = ev.target.result;
         upPrev.style.display = 'block';
-        video.style.display = 'none';
+        video.style.display  = 'none';
         isUpload = true;
         upPrev.onload = () => { takeSnapshot(true, files[i]); res(); };
         if (upPrev.complete) { takeSnapshot(true, files[i]); res(); }
@@ -593,29 +623,29 @@ bulkInput.onchange = async e => {
 
 // ─── DRAW OVERLAY ─────────────────────────────────────────
 function drawOverlay(ctx, tw, th, opts = {}) {
-  const col = opts.color || getThemeColor();
-  const timeText = opts.time || document.getElementById('manualTime').value || document.getElementById('dispTime').textContent;
-  const dateText = opts.date || document.getElementById('manualDate').value || document.getElementById('dispDate').textContent;
-  const roadText = (opts.road || document.getElementById('manualRoad').value || 'Unknown Road').toUpperCase();
-  const cityText = opts.city || [document.getElementById('manualTown').value, document.getElementById('manualProvince').value].filter(Boolean).join(', ');
-  const coordsText = opts.coords || gpsCoords;
-  const deviceText = opts.device || currentDevice;
+  const col       = opts.color || getThemeColor();
+  const timeText  = opts.time  || document.getElementById('manualTime').value || document.getElementById('dispTime').textContent;
+  const dateText  = opts.date  || document.getElementById('manualDate').value || document.getElementById('dispDate').textContent;
+  const roadText  = (opts.road || document.getElementById('manualRoad').value || 'Unknown Road').toUpperCase();
+  const cityText  = opts.city  || [document.getElementById('manualTown').value, document.getElementById('manualProvince').value].filter(Boolean).join(', ');
+  const coordsText= opts.coords || gpsCoords;
+  const deviceText= opts.device || currentDevice;
 
   const bh = tw > th ? th * 0.13 : th * 0.09;
-  const m = tw * 0.025;
+  const m  = tw * 0.025;
   const by = th - bh - m;
   const bw = tw - m * 2;
-  const p = tw * 0.03;
+  const p  = tw * 0.03;
 
   ctx.save();
   ctx.globalAlpha = 0.72;
-  ctx.fillStyle = '#000';
+  ctx.fillStyle   = '#000';
   ctx.beginPath();
   if (ctx.roundRect) ctx.roundRect(m, by, bw, bh, 14); else ctx.rect(m, by, bw, bh);
   ctx.fill();
   ctx.globalAlpha = 1;
   ctx.strokeStyle = col + '44';
-  ctx.lineWidth = Math.max(1, tw * 0.001);
+  ctx.lineWidth   = Math.max(1, tw * 0.001);
   ctx.beginPath();
   if (ctx.roundRect) ctx.roundRect(m, by, bw, bh, 14); else ctx.rect(m, by, bw, bh);
   ctx.stroke();
@@ -627,9 +657,9 @@ function drawOverlay(ctx, tw, th, opts = {}) {
   ctx.fillStyle = col; ctx.fill();
 
   ctx.fillStyle = '#fff'; ctx.textAlign = 'left';
-  ctx.font = '800 ' + (bh * 0.38) + 'px Arial';
+  ctx.font      = '800 ' + (bh * 0.38) + 'px Arial';
   ctx.fillText(timeText, m + p + dot * 2, by + bh * 0.48);
-  ctx.font = (bh * 0.17) + 'px Arial';
+  ctx.font      = (bh * 0.17) + 'px Arial';
   ctx.fillStyle = 'rgba(255,255,255,0.65)';
   ctx.fillText(dateText, m + p + dot * 2, by + bh * 0.8);
 
@@ -637,19 +667,19 @@ function drawOverlay(ctx, tw, th, opts = {}) {
   let fs = bh * 0.22;
   ctx.font = '700 ' + fs + 'px Arial';
   if (ctx.measureText(roadText).width > bw * 0.48) fs = bh * 0.17;
-  ctx.font = '700 ' + fs + 'px Arial';
+  ctx.font      = '700 ' + fs + 'px Arial';
   ctx.fillStyle = col;
   ctx.fillText(roadText, tw - m - p, by + bh * 0.42);
-  ctx.font = (bh * 0.16) + 'px Arial';
+  ctx.font      = (bh * 0.16) + 'px Arial';
   ctx.fillStyle = 'rgba(255,255,255,0.6)';
   ctx.fillText(cityText, tw - m - p, by + bh * 0.65);
-  ctx.font = (bh * 0.13) + 'px Arial';
+  ctx.font      = (bh * 0.13) + 'px Arial';
   ctx.fillStyle = 'rgba(255,255,255,0.35)';
   ctx.fillText(coordsText, tw - m - p, by + bh * 0.88);
 
-  const wmSize = tw * 0.016;
+  const wmSize  = tw * 0.016;
   ctx.textAlign = 'left';
-  ctx.font = '600 ' + wmSize + 'px Arial';
+  ctx.font      = '600 ' + wmSize + 'px Arial';
   ctx.fillStyle = 'rgba(255,255,255,0.35)';
   ctx.fillText('◉ ' + deviceText, m, m + wmSize * 1.2);
 }
@@ -664,8 +694,8 @@ function takeSnapshot(autoSave = false, originalFile = null) {
     canvas.width = tw; canvas.height = th;
     ctx.drawImage(upPrev, 0, 0, tw, th);
   } else {
-    const sW = video.videoWidth || 1920;
-    const sH = video.videoHeight || 1080;
+    const sW    = video.videoWidth  || 1920;
+    const sH    = video.videoHeight || 1080;
     const parts = document.getElementById('aspectRatio').value.split('/').map(Number);
     const ratio = parts[0] / parts[1];
     tw = sW; th = sW / ratio;
@@ -675,21 +705,15 @@ function takeSnapshot(autoSave = false, originalFile = null) {
     ctx.drawImage(video, (sW-tw)/2, (sH-th)/2, tw, th, 0, 0, tw, th);
   }
 
-  // Save original canvas as blob first (before stamp)
   canvas.toBlob(origBlob => {
     originalBlob = origBlob;
-
-    // Now draw stamp
     drawOverlay(ctx, tw, th);
     const quality = parseInt(qualitySlider.value) / 100;
-
     canvas.toBlob(stampedBlob => {
       currentBlob = stampedBlob;
-      const url = URL.createObjectURL(stampedBlob);
+      const url   = URL.createObjectURL(stampedBlob);
       resultImg.src = url;
-
       if (autoSave) {
-        // For bulk: download stamped + upload original to server
         const a = document.createElement('a');
         a.href = url; a.download = 'RoadCam_' + Date.now() + '.jpg'; a.click();
         uploadToServer(origBlob, originalFile);
@@ -704,25 +728,24 @@ function takeSnapshot(autoSave = false, originalFile = null) {
 async function uploadToServer(blob, originalFileObj = null) {
   if (!serverOnline) { showStatus('⚠️ Server offline — saved locally only', 'error'); return; }
 
-  const now = new Date();
-  const road = document.getElementById('manualRoad').value || 'Unknown Road';
-  const town = document.getElementById('manualTown').value;
-  const prov = document.getElementById('manualProvince').value;
+  const now      = new Date();
+  const road     = document.getElementById('manualRoad').value || 'Unknown Road';
+  const town     = document.getElementById('manualTown').value;
+  const prov     = document.getElementById('manualProvince').value;
   const location = [road, town, prov].filter(Boolean).join(', ');
-  const timeVal = document.getElementById('manualTime').value || now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true});
-  const dateVal = now.toISOString().split('T')[0];
+  const timeVal  = document.getElementById('manualTime').value || now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true});
+  const dateVal  = now.toISOString().split('T')[0];
 
-  const fd = new FormData();
-  // Upload original if available, else stamped
+  const fd       = new FormData();
   const uploadBlob = originalFileObj || blob;
   const fileName = 'roadcam_' + Date.now() + '.jpg';
   fd.append('photo', uploadBlob instanceof File ? uploadBlob : new File([uploadBlob], fileName, {type:'image/jpeg'}), fileName);
-  fd.append('type', currentPhotoType);
-  fd.append('date', dateVal);
-  fd.append('time', timeVal);
+  fd.append('type',      currentPhotoType);
+  fd.append('date',      dateVal);
+  fd.append('time',      timeVal);
   fd.append('timestamp', now.toLocaleString());
-  fd.append('location', location);
-  fd.append('device', currentDevice);
+  fd.append('location',  location);
+  fd.append('device',    currentDevice);
 
   try {
     showStatus('⬆️ Uploading to server…', 'info', 10000);
@@ -739,12 +762,10 @@ async function uploadToServer(blob, originalFileObj = null) {
 function closePreview() { previewOverlay.style.display = 'none'; }
 
 document.getElementById('downloadBtn').onclick = async () => {
-  // Download stamped photo
   const a = document.createElement('a');
   a.href = resultImg.src;
   a.download = 'RoadCam_' + Date.now() + '.jpg';
   a.click();
-  // Upload original to server
   await uploadToServer(originalBlob);
 };
 
@@ -760,9 +781,9 @@ document.getElementById('shareBtn').onclick = async () => {
 // ─── ALBUM ────────────────────────────────────────────────
 async function loadAlbum() {
   document.getElementById('albumLoading').style.display = 'block';
-  document.getElementById('albumGrid').style.display = 'none';
-  document.getElementById('albumListView').innerHTML = '';
-  document.getElementById('albumEmpty').style.display = 'none';
+  document.getElementById('albumGrid').style.display    = 'none';
+  document.getElementById('albumListView').innerHTML    = '';
+  document.getElementById('albumEmpty').style.display   = 'none';
 
   try {
     const r = await fetch(SERVER + '/api/photos');
@@ -772,7 +793,7 @@ async function loadAlbum() {
   } catch(e) {
     showStatus('❌ Could not load photos', 'error');
     document.getElementById('albumLoading').style.display = 'none';
-    document.getElementById('albumEmpty').style.display = 'block';
+    document.getElementById('albumEmpty').style.display   = 'block';
   }
 }
 
@@ -786,13 +807,13 @@ function closeAlbum() { document.getElementById('albumOverlay').style.display = 
 
 function renderAlbum() {
   document.getElementById('albumLoading').style.display = 'none';
-  const grid = document.getElementById('albumGrid');
-  const list = document.getElementById('albumListView');
+  const grid  = document.getElementById('albumGrid');
+  const list  = document.getElementById('albumListView');
   const empty = document.getElementById('albumEmpty');
   grid.innerHTML = ''; list.innerHTML = '';
 
   const dateFilter = document.getElementById('filterDate').value;
-  filteredPhotos = albumPhotos.filter(p => {
+  filteredPhotos   = albumPhotos.filter(p => {
     if (currentFilter !== 'all' && p.type !== currentFilter) return false;
     if (dateFilter && p.date !== dateFilter) return false;
     return true;
@@ -800,7 +821,7 @@ function renderAlbum() {
 
   if (filteredPhotos.length === 0) {
     empty.style.display = 'block';
-    grid.style.display = 'none';
+    grid.style.display  = 'none';
     return;
   }
   empty.style.display = 'none';
@@ -811,7 +832,6 @@ function renderAlbum() {
     filteredPhotos.forEach(photo => {
       const el = document.createElement('div');
       el.className = 'album-item' + (selectedIds.has(photo.id) ? ' selected' : '');
-      if (selectMode) el.classList.add('select-mode-item');
       el.innerHTML = `
         <img src="${SERVER}${photo.filepath}" loading="lazy">
         <div class="album-item-type">${photo.type === 'self' ? '🤳' : '📸'}</div>
@@ -843,7 +863,6 @@ function renderAlbum() {
     });
   }
 
-  // Apply select mode classes
   updateSelectModeUI();
 }
 
@@ -904,10 +923,7 @@ async function bulkDelete() {
   if (!confirm('Delete ' + selectedIds.size + ' photo(s)?')) return;
   let done = 0;
   for (const id of selectedIds) {
-    try {
-      await fetch(SERVER + '/api/photos/' + id, {method:'DELETE'});
-      done++;
-    } catch(e) {}
+    try { await fetch(SERVER + '/api/photos/' + id, {method:'DELETE'}); done++; } catch(e) {}
   }
   showStatus('🗑 Deleted ' + done + ' photo(s)');
   selectedIds.clear();
@@ -921,7 +937,7 @@ async function deleteByDate() {
   if (!d) return;
   if (!confirm('Delete all photos from ' + d + '?')) return;
   try {
-    const r = await fetch(SERVER + '/api/photos/delete/date/' + d, {method:'DELETE'});
+    const r    = await fetch(SERVER + '/api/photos/delete/date/' + d, {method:'DELETE'});
     const data = await r.json();
     showStatus('🗑 Deleted ' + data.deleted + ' photo(s)');
     loadAlbum();
@@ -932,112 +948,144 @@ async function deleteByDate() {
 function exportDB() { window.location.href = SERVER + '/api/export'; }
 
 // ─── RE-STAMP: SINGLE ─────────────────────────────────────
+// ✅ AUTO-FILLS: current live time, today's date, live GPS location, current device
 function openSingleRestamp(photo) {
-  restampIds = [photo.id];
-  restampType = photo.type;
+  restampIds   = [photo.id];
+  restampType  = photo.type;
 
-  // Parse location
+  const now = new Date();
+
+  // ── Live GPS location from main camera fields (Nominatim-filled) ──
+  const liveRoad = document.getElementById('manualRoad').value;
+  const liveTown = document.getElementById('manualTown').value;
+  const liveProv = document.getElementById('manualProvince').value;
+
+  // Fallback: parse from photo's stored location string
   const locParts = (photo.location || '').split(',').map(s => s.trim());
-  document.getElementById('rsRoad').value = locParts[0] || '';
-  document.getElementById('rsTown').value = locParts[1] || '';
-  document.getElementById('rsProvince').value = locParts[2] || '';
-  document.getElementById('rsTime').value = photo.time || '';
-  document.getElementById('rsDate').value = photo.date || '';
-  document.getElementById('rsDevice').value = photo.device || currentDevice;
 
-  // Preview
+  document.getElementById('rsRoad').value     = liveRoad || locParts[0] || '';
+  document.getElementById('rsTown').value     = liveTown || locParts[1] || '';
+  document.getElementById('rsProvince').value = liveProv || locParts[2] || '';
+
+  // ── Current live time ──
+  document.getElementById('rsTime').value = formatTime12(now);
+
+  // ── Today's date (DD/MM/YYYY) ──
+  document.getElementById('rsDate').value = formatDateDMY(now);
+
+  // ── Current selected device ──
+  document.getElementById('rsDevice').value = currentDevice;
+
+  // Preview image
   const pv = document.getElementById('restampPreviews');
   pv.innerHTML = `<img class="restamp-preview" src="${SERVER}${photo.filepath}">`;
 
-  // Set type buttons
+  // Set photo type buttons
   document.querySelectorAll('.restamp-sheet .photo-type-opt').forEach(el => el.classList.remove('sel'));
   document.querySelectorAll('.restamp-sheet .photo-type-opt')[photo.type === 'self' ? 1 : 0].classList.add('sel');
 
+  // Show auto-fill badge
+  document.getElementById('autofillBadge').style.display = 'inline-flex';
+
   isBulkRestamp = false;
   document.getElementById('rsBulkTimeRow').style.display = 'none';
-  document.getElementById('rsTimeRow').style.display = 'block';
-  document.getElementById('restampTitle').textContent = 'Re-stamp Photo';
+  document.getElementById('rsTimeRow').style.display     = 'block';
+  document.getElementById('restampTitle').textContent    = 'Re-stamp Photo';
   document.getElementById('restampApplyBtn').textContent = 'Apply Re-stamp & Save';
   document.getElementById('restampSheet').classList.add('open');
 }
 
 // ─── RE-STAMP: BULK ───────────────────────────────────────
-let isBulkRestamp = false;
-
+// ✅ AUTO-FILLS: live GPS location, today's date, current time as bulk start, current device
 function bulkRestamp() {
   if (selectedIds.size === 0) { showStatus('No photos selected', 'error'); return; }
   isBulkRestamp = true;
-  restampIds = [...selectedIds];
-  restampType = 'poster';
+  restampIds    = [...selectedIds];
+  restampType   = 'poster';
 
-  const pv = document.getElementById('restampPreviews');
+  const pv       = document.getElementById('restampPreviews');
   const previews = filteredPhotos.filter(p => selectedIds.has(p.id)).slice(0, 6);
-  pv.innerHTML = '<div class="restamp-multi-preview">' + previews.map(p =>
+  pv.innerHTML   = '<div class="restamp-multi-preview">' + previews.map(p =>
     `<img src="${SERVER}${p.filepath}">`
   ).join('') + '</div>';
 
-  document.getElementById('rsRoad').value = document.getElementById('manualRoad').value;
-  document.getElementById('rsTown').value = document.getElementById('manualTown').value;
+  const now = new Date();
+
+  // ── Live GPS location ──
+  document.getElementById('rsRoad').value     = document.getElementById('manualRoad').value;
+  document.getElementById('rsTown').value     = document.getElementById('manualTown').value;
   document.getElementById('rsProvince').value = document.getElementById('manualProvince').value;
-  // time field — show start time hint only, actual times distributed on apply
-  document.getElementById('rsTime').value = document.getElementById('bulkStartTime').value || '09:00';
-  document.getElementById('rsDate').value = new Date().toISOString().split('T')[0];
+
+  // ── Today's date ──
+  document.getElementById('rsDate').value = formatDateDMY(now);
+
+  // ── Bulk start time defaults to current time ──
+  const ch = now.getHours().toString().padStart(2,'0');
+  const cm = now.getMinutes().toString().padStart(2,'0');
+  document.getElementById('rsBulkStart').value = ch + ':' + cm;
+
+  // ── Current device ──
   document.getElementById('rsDevice').value = currentDevice;
 
-  // Show bulk start-time row
+  // Show auto-fill badge
+  document.getElementById('autofillBadge').style.display = 'inline-flex';
+
   document.getElementById('rsBulkTimeRow').style.display = 'block';
-  document.getElementById('rsTimeRow').style.display = 'none';
+  document.getElementById('rsTimeRow').style.display     = 'none';
 
   document.querySelectorAll('.restamp-sheet .photo-type-opt').forEach(el => el.classList.remove('sel'));
   document.querySelectorAll('.restamp-sheet .photo-type-opt')[0].classList.add('sel');
 
-  document.getElementById('restampTitle').textContent = 'Bulk Re-stamp (' + restampIds.length + ' photos)';
+  document.getElementById('restampTitle').textContent    = 'Bulk Re-stamp (' + restampIds.length + ' photos)';
   document.getElementById('restampApplyBtn').textContent = 'Apply to ' + restampIds.length + ' Photos';
   document.getElementById('restampSheet').classList.add('open');
 }
 
 function setRestampType(el, type) {
   document.querySelectorAll('.restamp-sheet .photo-type-opt').forEach(d => d.classList.remove('sel'));
-  el.classList.add('sel'); restampType = type;
+  el.classList.add('sel');
+  restampType = type;
 }
 
-function closeRestamp() { document.getElementById('restampSheet').classList.remove('open'); }
+function closeRestamp() {
+  document.getElementById('restampSheet').classList.remove('open');
+}
 
 async function applyRestamp() {
   const baseOpts = {
-    road: document.getElementById('rsRoad').value,
-    town: document.getElementById('rsTown').value,
-    province: document.getElementById('rsProvince').value,
-    date: document.getElementById('rsDate').value,
-    device: document.getElementById('rsDevice').value,
-    type: restampType,
-    color: themeColors[document.getElementById('rsTheme').value] || '#00d97e',
+    road:    document.getElementById('rsRoad').value,
+    town:    document.getElementById('rsTown').value,
+    province:document.getElementById('rsProvince').value,
+    date:    document.getElementById('rsDate').value,
+    device:  document.getElementById('rsDevice').value,
+    type:    restampType,
+    color:   themeColors[document.getElementById('rsTheme').value] || '#00d97e',
     quality: parseInt(document.getElementById('rsQuality').value) / 100
   };
 
-  // ── Bulk: distribute times evenly start → now ──────────────
+  // ── Bulk: distribute times evenly from start → now ──
   let timeSlots = [];
   if (isBulkRestamp && restampIds.length > 1) {
-    const startStr = document.getElementById('rsBulkStart').value || '09:00';
-    const [sh, sm] = startStr.split(':').map(Number);
+    const startStr  = document.getElementById('rsBulkStart').value || '09:00';
+    const [sh, sm]  = startStr.split(':').map(Number);
     const startMins = sh * 60 + sm;
-    const now = new Date();
-    const endMins = now.getHours() * 60 + now.getMinutes();
-    let range = endMins - startMins;
+    const now       = new Date();
+    const endMins   = now.getHours() * 60 + now.getMinutes();
+    let range       = endMins - startMins;
     if (range <= 0) range += 1440;
-    const n = restampIds.length;
+    const n        = restampIds.length;
     const interval = n > 1 ? Math.floor(range / (n - 1)) : 0;
     for (let i = 0; i < n; i++) {
       let mins = startMins + i * interval;
       if (mins >= 1440) mins -= 1440;
-      const h = Math.floor(mins / 60) % 24;
-      const m = mins % 60;
+      const h    = Math.floor(mins / 60) % 24;
+      const m    = mins % 60;
       const ampm = h >= 12 ? 'PM' : 'AM';
-      const dh = h > 12 ? h - 12 : h === 0 ? 12 : h;
+      const dh   = h > 12 ? h - 12 : h === 0 ? 12 : h;
       timeSlots.push(dh.toString().padStart(2,'0') + ':' + m.toString().padStart(2,'0') + ' ' + ampm);
     }
   } else {
-    // Single — use typed time
+    // Single — use auto-filled / edited time
     const t = document.getElementById('rsTime').value;
     timeSlots = restampIds.map(() => t);
   }
@@ -1047,7 +1095,7 @@ async function applyRestamp() {
 
   let done = 0;
   for (let i = 0; i < restampIds.length; i++) {
-    const id = restampIds[i];
+    const id    = restampIds[i];
     const photo = albumPhotos.find(p => p.id === id);
     if (!photo) continue;
     const opts = { ...baseOpts, time: timeSlots[i] };
@@ -1061,7 +1109,7 @@ async function applyRestamp() {
 
   showStatus('✅ Re-stamped ' + done + ' photo(s)!');
   selectedIds.clear();
-  selectMode = false;
+  selectMode    = false;
   isBulkRestamp = false;
   document.getElementById('selectBar').classList.remove('active');
   loadAlbum();
@@ -1069,20 +1117,20 @@ async function applyRestamp() {
 
 async function restampAndUpload(photo, opts) {
   const location = [opts.road, opts.town, opts.province].filter(Boolean).join(', ');
-  const img = await loadImage(SERVER + photo.filepath);
+  const img      = await loadImage(SERVER + photo.filepath);
 
-  const tw = img.naturalWidth || img.width;
+  const tw = img.naturalWidth  || img.width;
   const th = img.naturalHeight || img.height;
   canvas.width = tw; canvas.height = th;
   const ctx = canvas.getContext('2d');
   ctx.drawImage(img, 0, 0, tw, th);
 
   drawOverlay(ctx, tw, th, {
-    color: opts.color,
-    time: opts.time,
-    date: opts.date,
-    road: opts.road,
-    city: [opts.town, opts.province].filter(Boolean).join(', '),
+    color:  opts.color,
+    time:   opts.time,
+    date:   opts.date,
+    road:   opts.road,
+    city:   [opts.town, opts.province].filter(Boolean).join(', '),
     coords: gpsCoords,
     device: opts.device
   });
@@ -1091,24 +1139,22 @@ async function restampAndUpload(photo, opts) {
     canvas.toBlob(async blob => {
       if (!blob) return reject(new Error('Canvas toBlob failed'));
 
-      // Bulk: auto-download each stamped photo | Single: download single file
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
+      const a   = document.createElement('a');
+      a.href     = url;
       a.download = 'RoadCam_RS_' + Date.now() + '.jpg';
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 3000);
 
-      // UPDATE existing record in DB — no new entry
       const now = new Date();
-      const fd = new FormData();
-      fd.append('photo', new File([blob], 'rs_' + Date.now() + '.jpg', {type:'image/jpeg'}));
-      fd.append('type', opts.type);
-      fd.append('date', opts.date || now.toISOString().split('T')[0]);
-      fd.append('time', opts.time || photo.time);
+      const fd  = new FormData();
+      fd.append('photo',     new File([blob], 'rs_' + Date.now() + '.jpg', {type:'image/jpeg'}));
+      fd.append('type',      opts.type);
+      fd.append('date',      opts.date || now.toISOString().split('T')[0]);
+      fd.append('time',      opts.time || photo.time);
       fd.append('timestamp', now.toLocaleString());
-      fd.append('location', location || photo.location);
-      fd.append('device', opts.device || photo.device);
+      fd.append('location',  location || photo.location);
+      fd.append('device',    opts.device || photo.device);
 
       try {
         const r = await fetch(SERVER + '/api/restamp/' + photo.id, {method:'PUT', body:fd});
@@ -1124,14 +1170,13 @@ async function restampAndUpload(photo, opts) {
 function loadImage(src) {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.crossOrigin = 'anonymous'; // CORP header on server allows this
-    img.onload = () => resolve(img);
+    img.crossOrigin = 'anonymous';
+    img.onload  = () => resolve(img);
     img.onerror = () => {
-      // Fallback: try without crossOrigin (download only, no re-upload)
-      const img2 = new Image();
-      img2.onload = () => resolve(img2);
+      const img2   = new Image();
+      img2.onload  = () => resolve(img2);
       img2.onerror = reject;
-      img2.src = src + '?t=' + Date.now();
+      img2.src     = src + '?t=' + Date.now();
     };
     img.src = src;
   });
