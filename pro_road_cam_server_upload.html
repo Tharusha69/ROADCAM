@@ -382,7 +382,7 @@ select.sfield option{background:#030a06}
       <input type="range" id="rsQuality" min="70" max="100" value="97" style="flex:1;accent-color:var(--g)">
       <span id="rsQualityLabel" style="font-size:11px;color:var(--g);font-weight:700;min-width:32px">97%</span>
     </div>
-    <button class="apply-btn" id="restampApplyBtn" onclick="applyRestamp()">Apply Re-stamp &amp; Upload</button>
+    <button class="apply-btn" id="restampApplyBtn" onclick="applyRestamp()">Apply Re-stamp</button>
   </div>
 </div>
 
@@ -948,32 +948,31 @@ async function deleteByDate() {
 function exportDB() { window.location.href = SERVER + '/api/export'; }
 
 // ─── RE-STAMP: SINGLE ─────────────────────────────────────
-// ✅ AUTO-FILLS: current live time, today's date, live GPS location, current device
+// ✅ AUTO-FILLS: current REAL-TIME NOW (live GPS location, current time, today's date, current device)
 function openSingleRestamp(photo) {
   restampIds   = [photo.id];
   restampType  = photo.type;
 
   const now = new Date();
 
-  // ── Live GPS location from main camera fields (Nominatim-filled) ──
+  // ── REAL CURRENT NOW GPS LOCATION ──
   const liveRoad = document.getElementById('manualRoad').value;
   const liveTown = document.getElementById('manualTown').value;
   const liveProv = document.getElementById('manualProvince').value;
 
-  // Fallback: parse from photo's stored location string
   const locParts = (photo.location || '').split(',').map(s => s.trim());
 
   document.getElementById('rsRoad').value     = liveRoad || locParts[0] || '';
   document.getElementById('rsTown').value     = liveTown || locParts[1] || '';
   document.getElementById('rsProvince').value = liveProv || locParts[2] || '';
 
-  // ── Current live time ──
+  // ── REAL CURRENT NOW TIME ──
   document.getElementById('rsTime').value = formatTime12(now);
 
-  // ── Today's date (DD/MM/YYYY) ──
+  // ── REAL CURRENT NOW DATE (TODAY) ──
   document.getElementById('rsDate').value = formatDateDMY(now);
 
-  // ── Current selected device ──
+  // ── CURRENT SELECTED DEVICE ──
   document.getElementById('rsDevice').value = currentDevice;
 
   // Preview image
@@ -991,12 +990,12 @@ function openSingleRestamp(photo) {
   document.getElementById('rsBulkTimeRow').style.display = 'none';
   document.getElementById('rsTimeRow').style.display     = 'block';
   document.getElementById('restampTitle').textContent    = 'Re-stamp Photo';
-  document.getElementById('restampApplyBtn').textContent = 'Apply Re-stamp & Save';
+  document.getElementById('restampApplyBtn').textContent = 'Apply Re-stamp';
   document.getElementById('restampSheet').classList.add('open');
 }
 
 // ─── RE-STAMP: BULK ───────────────────────────────────────
-// ✅ AUTO-FILLS: live GPS location, today's date, current time as bulk start, current device
+// ✅ AUTO-FILLS: real-time GPS location, today's date, current time as bulk start, current device
 function bulkRestamp() {
   if (selectedIds.size === 0) { showStatus('No photos selected', 'error'); return; }
   isBulkRestamp = true;
@@ -1011,20 +1010,20 @@ function bulkRestamp() {
 
   const now = new Date();
 
-  // ── Live GPS location ──
+  // ── REAL CURRENT NOW GPS LOCATION ──
   document.getElementById('rsRoad').value     = document.getElementById('manualRoad').value;
   document.getElementById('rsTown').value     = document.getElementById('manualTown').value;
   document.getElementById('rsProvince').value = document.getElementById('manualProvince').value;
 
-  // ── Today's date ──
+  // ── REAL CURRENT NOW DATE (TODAY) ──
   document.getElementById('rsDate').value = formatDateDMY(now);
 
-  // ── Bulk start time defaults to current time ──
+  // ── REAL CURRENT NOW TIME as bulk start ──
   const ch = now.getHours().toString().padStart(2,'0');
   const cm = now.getMinutes().toString().padStart(2,'0');
   document.getElementById('rsBulkStart').value = ch + ':' + cm;
 
-  // ── Current device ──
+  // ── CURRENT DEVICE ──
   document.getElementById('rsDevice').value = currentDevice;
 
   // Show auto-fill badge
@@ -1037,7 +1036,7 @@ function bulkRestamp() {
   document.querySelectorAll('.restamp-sheet .photo-type-opt')[0].classList.add('sel');
 
   document.getElementById('restampTitle').textContent    = 'Bulk Re-stamp (' + restampIds.length + ' photos)';
-  document.getElementById('restampApplyBtn').textContent = 'Apply to ' + restampIds.length + ' Photos';
+  document.getElementById('restampApplyBtn').textContent = 'Apply Re-stamp';
   document.getElementById('restampSheet').classList.add('open');
 }
 
