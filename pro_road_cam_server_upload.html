@@ -427,7 +427,6 @@ let isBulkRestamp  = false;
 const themeColors  = {green:'#00d97e',blue:'#3b82f6',amber:'#f59e0b',red:'#ef4444',white:'#ffffff'};
 
 // ─── HELPERS ──────────────────────────────────────────────
-// Returns "HH:MM AM/PM" for a given Date (or now if omitted)
 function formatTime12(date) {
   date = date || new Date();
   const h    = date.getHours();
@@ -437,10 +436,9 @@ function formatTime12(date) {
   return dh.toString().padStart(2,'0') + ':' + m.toString().padStart(2,'0') + ' ' + ampm;
 }
 
-// Returns "DD/MM/YYYY" for a given Date (or now if omitted)
 function formatDateDMY(date) {
   date = date || new Date();
-  return date.toLocaleDateString('en-GB'); // DD/MM/YYYY
+  return date.toLocaleDateString('en-GB'); 
 }
 
 // ─── TOAST ────────────────────────────────────────────────
@@ -460,8 +458,10 @@ async function checkServer() {
       serverOnline = true;
       document.getElementById('serverDot').classList.add('online');
       document.getElementById('serverStatus').textContent = 'Online';
-    }
+    } else { throw new Error(); }
   } catch(e) {
+    serverOnline = false;
+    document.getElementById('serverDot').classList.remove('online');
     document.getElementById('serverStatus').textContent = 'Offline';
   }
 }
@@ -473,8 +473,8 @@ function updateClock() {
   const dateStr = now.toLocaleDateString('en-GB') + ' • ' + now.toLocaleDateString('en-GB',{weekday:'long'});
   document.getElementById('dispTime').textContent    = timeStr;
   document.getElementById('dispDate').textContent    = dateStr;
-  document.getElementById('manualTime').value        = timeStr;
-  document.getElementById('manualDate').value        = now.toLocaleDateString('en-GB') + ' | ' + now.toLocaleDateString('en-GB',{weekday:'long'});
+  if (!document.getElementById('manualTime').value) document.getElementById('manualTime').value = timeStr;
+  if (!document.getElementById('manualDate').value) document.getElementById('manualDate').value = now.toLocaleDateString('en-GB') + ' | ' + now.toLocaleDateString('en-GB',{weekday:'long'});
 }
 
 // ─── SETTINGS ─────────────────────────────────────────────
@@ -493,7 +493,7 @@ function setDevice(el, name) {
   document.getElementById('deviceLabel').textContent = name;
 }
 function setPhotoType(el, type) {
-  document.querySelectorAll('.photo-type-opt').forEach(d => d.classList.remove('sel'));
+  document.querySelectorAll('#photoTypeRow .photo-type-opt').forEach(d => d.classList.remove('sel'));
   el.classList.add('sel');
   currentPhotoType = type;
 }
@@ -524,38 +524,42 @@ async function initApp() {
   checkServer();
   setInterval(checkServer, 30000);
 
-  navigator.geolocation.getCurrentPosition(async pos => {
-    const lat    = pos.coords.latitude.toFixed(5);
-    const lon    = pos.coords.longitude.toFixed(5);
-    const latDir = pos.coords.latitude  >= 0 ? 'N' : 'S';
-    const lonDir = pos.coords.longitude >= 0 ? 'E' : 'W';
-    gpsCoords = Math.abs(lat) + '° ' + latDir + ', ' + Math.abs(lon) + '° ' + lonDir;
-    document.getElementById('dispCoords').textContent = gpsCoords;
-    document.getElementById('gpsText').textContent    = gpsCoords;
-    document.getElementById('gpsStatus').textContent  = 'Active';
-    document.getElementById('gpsStatus').className    = 'gps-status ok';
-    try {
-      const r = await fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat='+lat+'&lon='+lon);
-      const d = await r.json();
-      const a = d.address || {};
-      const road = a.road || a.suburb || 'Unnamed Road';
-      const city = a.city  || a.town  || a.village || '';
-      const prov = a.state || '';
-      document.getElementById('manualRoad').value     = road;
-      document.getElementById('manualTown').value     = city;
-      document.getElementById('manualProvince').value = prov;
-      document.getElementById('dispRoad').textContent = road.toUpperCase();
-      document.getElementById('dispCity').textContent = [city,prov].filter(Boolean).join(', ');
-      document.getElementById('gpsText').textContent  = road + (city ? ', '+city : '');
-    } catch(e) {
-      document.getElementById('dispRoad').textContent = 'GPS ACTIVE';
-    }
-  }, err => {
-    const msgs = {1:'GPS denied',2:'Signal weak',3:'GPS timeout'};
-    document.getElementById('gpsText').textContent   = msgs[err.code] || 'GPS unavailable';
-    document.getElementById('gpsStatus').textContent = 'Off';
-    document.getElementById('gpsStatus').className   = 'gps-status';
-  }, {enableHighAccuracy:true, timeout:10000, maximumAge:0});
+  if ('geolocation' in navigator) {
+    navigator.geolocation.getCurrentPosition(async pos => {
+      const lat    = pos.coords.latitude.toFixed(5);
+      const lon    = pos.coords.longitude.toFixed(5);
+      const latDir = pos.coords.latitude  >= 0 ? 'N' : 'S';
+      const lonDir = pos.coords.longitude >= 0 ? 'E' : 'W';
+      gpsCoords = Math.abs(lat) + '° ' + latDir + ', ' + Math.abs(lon) + '° ' + lonDir;
+      document.getElementById('dispCoords').textContent = gpsCoords;
+      document.getElementById('gpsText').textContent    = gpsCoords;
+      document.getElementById('gpsStatus').textContent  = 'Active';
+      document.getElementById('gpsStatus').className    = 'gps-status ok';
+      try {
+        const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+        if(r.ok) {
+          const d = await r.json();
+          const a = d.address || {};
+          const road = a.road || a.suburb || 'Unnamed Road';
+          const city = a.city  || a.town  || a.village || '';
+          const prov = a.state || '';
+          document.getElementById('manualRoad').value     = road;
+          document.getElementById('manualTown').value     = city;
+          document.getElementById('manualProvince').value = prov;
+          document.getElementById('dispRoad').textContent = road.toUpperCase();
+          document.getElementById('dispCity').textContent = [city,prov].filter(Boolean).join(', ');
+          document.getElementById('gpsText').textContent  = road + (city ? ', '+city : '');
+        }
+      } catch(e) {
+        document.getElementById('dispRoad').textContent = 'GPS ACTIVE';
+      }
+    }, err => {
+      const msgs = {1:'GPS denied',2:'Signal weak',3:'GPS timeout'};
+      document.getElementById('gpsText').textContent   = msgs[err.code] || 'GPS unavailable';
+      document.getElementById('gpsStatus').textContent = 'Off';
+      document.getElementById('gpsStatus').className   = 'gps-status';
+    }, {enableHighAccuracy:true, timeout:10000, maximumAge:0});
+  }
 
   try {
     const stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:4032}}});
@@ -690,7 +694,8 @@ function takeSnapshot(autoSave = false, originalFile = null) {
   let tw, th;
 
   if (isUpload) {
-    tw = upPrev.naturalWidth; th = upPrev.naturalHeight;
+    tw = upPrev.naturalWidth || 1920; 
+    th = upPrev.naturalHeight || 1080;
     canvas.width = tw; canvas.height = th;
     ctx.drawImage(upPrev, 0, 0, tw, th);
   } else {
@@ -787,6 +792,7 @@ async function loadAlbum() {
 
   try {
     const r = await fetch(SERVER + '/api/photos');
+    if(!r.ok) throw new Error();
     albumPhotos = await r.json();
     document.getElementById('photoCount').textContent = albumPhotos.length;
     renderAlbum();
@@ -939,7 +945,7 @@ async function deleteByDate() {
   try {
     const r    = await fetch(SERVER + '/api/photos/delete/date/' + d, {method:'DELETE'});
     const data = await r.json();
-    showStatus('🗑 Deleted ' + data.deleted + ' photo(s)');
+    showStatus('🗑 Deleted ' + (data.deleted || 0) + ' photo(s)');
     loadAlbum();
   } catch(e) { showStatus('❌ Delete failed', 'error'); }
 }
@@ -948,14 +954,12 @@ async function deleteByDate() {
 function exportDB() { window.location.href = SERVER + '/api/export'; }
 
 // ─── RE-STAMP: SINGLE ─────────────────────────────────────
-// ✅ AUTO-FILLS: current REAL-TIME NOW (live GPS location, current time, today's date, current device)
 function openSingleRestamp(photo) {
   restampIds   = [photo.id];
-  restampType  = photo.type;
+  restampType  = photo.type || 'poster';
 
   const now = new Date();
 
-  // ── REAL CURRENT NOW GPS LOCATION ──
   const liveRoad = document.getElementById('manualRoad').value;
   const liveTown = document.getElementById('manualTown').value;
   const liveProv = document.getElementById('manualProvince').value;
@@ -966,24 +970,17 @@ function openSingleRestamp(photo) {
   document.getElementById('rsTown').value     = liveTown || locParts[1] || '';
   document.getElementById('rsProvince').value = liveProv || locParts[2] || '';
 
-  // ── REAL CURRENT NOW TIME ──
   document.getElementById('rsTime').value = formatTime12(now);
-
-  // ── REAL CURRENT NOW DATE (TODAY) ──
   document.getElementById('rsDate').value = formatDateDMY(now);
-
-  // ── CURRENT SELECTED DEVICE ──
   document.getElementById('rsDevice').value = currentDevice;
 
-  // Preview image
   const pv = document.getElementById('restampPreviews');
   pv.innerHTML = `<img class="restamp-preview" src="${SERVER}${photo.filepath}">`;
 
-  // Set photo type buttons
   document.querySelectorAll('.restamp-sheet .photo-type-opt').forEach(el => el.classList.remove('sel'));
-  document.querySelectorAll('.restamp-sheet .photo-type-opt')[photo.type === 'self' ? 1 : 0].classList.add('sel');
+  const opts = document.querySelectorAll('.restamp-sheet .photo-type-opt');
+  if (opts.length > 0) opts[photo.type === 'self' ? 1 : 0].classList.add('sel');
 
-  // Show auto-fill badge
   document.getElementById('autofillBadge').style.display = 'inline-flex';
 
   isBulkRestamp = false;
@@ -995,7 +992,6 @@ function openSingleRestamp(photo) {
 }
 
 // ─── RE-STAMP: BULK ───────────────────────────────────────
-// ✅ AUTO-FILLS: real-time GPS location, today's date, current time as bulk start, current device
 function bulkRestamp() {
   if (selectedIds.size === 0) { showStatus('No photos selected', 'error'); return; }
   isBulkRestamp = true;
@@ -1010,30 +1006,23 @@ function bulkRestamp() {
 
   const now = new Date();
 
-  // ── REAL CURRENT NOW GPS LOCATION ──
   document.getElementById('rsRoad').value     = document.getElementById('manualRoad').value;
   document.getElementById('rsTown').value     = document.getElementById('manualTown').value;
   document.getElementById('rsProvince').value = document.getElementById('manualProvince').value;
+  document.getElementById('rsDate').value     = formatDateDMY(now);
 
-  // ── REAL CURRENT NOW DATE (TODAY) ──
-  document.getElementById('rsDate').value = formatDateDMY(now);
-
-  // ── REAL CURRENT NOW TIME as bulk start ──
   const ch = now.getHours().toString().padStart(2,'0');
   const cm = now.getMinutes().toString().padStart(2,'0');
   document.getElementById('rsBulkStart').value = ch + ':' + cm;
+  document.getElementById('rsDevice').value    = currentDevice;
 
-  // ── CURRENT DEVICE ──
-  document.getElementById('rsDevice').value = currentDevice;
-
-  // Show auto-fill badge
   document.getElementById('autofillBadge').style.display = 'inline-flex';
-
   document.getElementById('rsBulkTimeRow').style.display = 'block';
   document.getElementById('rsTimeRow').style.display     = 'none';
 
   document.querySelectorAll('.restamp-sheet .photo-type-opt').forEach(el => el.classList.remove('sel'));
-  document.querySelectorAll('.restamp-sheet .photo-type-opt')[0].classList.add('sel');
+  const opts = document.querySelectorAll('.restamp-sheet .photo-type-opt');
+  if (opts.length > 0) opts[0].classList.add('sel');
 
   document.getElementById('restampTitle').textContent    = 'Bulk Re-stamp (' + restampIds.length + ' photos)';
   document.getElementById('restampApplyBtn').textContent = 'Apply Re-stamp';
@@ -1062,7 +1051,6 @@ async function applyRestamp() {
     quality: parseInt(document.getElementById('rsQuality').value) / 100
   };
 
-  // ── Bulk: distribute times evenly from start → now ──
   let timeSlots = [];
   if (isBulkRestamp && restampIds.length > 1) {
     const startStr  = document.getElementById('rsBulkStart').value || '09:00';
@@ -1084,7 +1072,6 @@ async function applyRestamp() {
       timeSlots.push(dh.toString().padStart(2,'0') + ':' + m.toString().padStart(2,'0') + ' ' + ampm);
     }
   } else {
-    // Single — use auto-filled / edited time
     const t = document.getElementById('rsTime').value;
     timeSlots = restampIds.map(() => t);
   }
@@ -1175,7 +1162,7 @@ function loadImage(src) {
       const img2   = new Image();
       img2.onload  = () => resolve(img2);
       img2.onerror = reject;
-      img2.src     = src + '?t=' + Date.now();
+      img2.src     = src + (src.includes('?') ? '&' : '?') + 't=' + Date.now();
     };
     img.src = src;
   });
