@@ -360,9 +360,9 @@ select.sfield option{background:#030a06}
       <span class="field-label">Time</span>
       <input type="text" id="rsTime" class="sfield" placeholder="e.g. 09:30 AM">
     </div>
-    <!-- Bulk: start time → auto distribute to now -->
+    <!-- Bulk: start time → random times onwards -->
     <div id="rsBulkTimeRow" style="display:none">
-      <span class="field-label">Bulk Start Time (distributes evenly to now)</span>
+      <span class="field-label">Bulk Start Time (random times from start onwards)</span>
       <input type="time" id="rsBulkStart" class="sfield" value="09:00">
     </div>
     <span class="field-label">Date</span>
@@ -382,7 +382,7 @@ select.sfield option{background:#030a06}
       <input type="range" id="rsQuality" min="70" max="100" value="97" style="flex:1;accent-color:var(--g)">
       <span id="rsQualityLabel" style="font-size:11px;color:var(--g);font-weight:700;min-width:32px">97%</span>
     </div>
-    <button class="apply-btn" id="restampApplyBtn" onclick="applyRestamp()">Apply Re-stamp &amp; Upload</button>
+    <button class="apply-btn" id="restampApplyBtn" onclick="applyRestamp()">Apply Re-stamp</button>
   </div>
 </div>
 
@@ -948,32 +948,31 @@ async function deleteByDate() {
 function exportDB() { window.location.href = SERVER + '/api/export'; }
 
 // ─── RE-STAMP: SINGLE ─────────────────────────────────────
-// ✅ AUTO-FILLS: current live time, today's date, live GPS location, current device
+// ✅ AUTO-FILLS: current REAL-TIME NOW (live GPS location, current time, today's date, current device)
 function openSingleRestamp(photo) {
   restampIds   = [photo.id];
   restampType  = photo.type;
 
   const now = new Date();
 
-  // ── Live GPS location from main camera fields (Nominatim-filled) ──
+  // ── REAL CURRENT NOW GPS LOCATION ──
   const liveRoad = document.getElementById('manualRoad').value;
   const liveTown = document.getElementById('manualTown').value;
   const liveProv = document.getElementById('manualProvince').value;
 
-  // Fallback: parse from photo's stored location string
   const locParts = (photo.location || '').split(',').map(s => s.trim());
 
   document.getElementById('rsRoad').value     = liveRoad || locParts[0] || '';
   document.getElementById('rsTown').value     = liveTown || locParts[1] || '';
   document.getElementById('rsProvince').value = liveProv || locParts[2] || '';
 
-  // ── Current live time ──
+  // ── REAL CURRENT NOW TIME ──
   document.getElementById('rsTime').value = formatTime12(now);
 
-  // ── Today's date (DD/MM/YYYY) ──
+  // ── REAL CURRENT NOW DATE (TODAY) ──
   document.getElementById('rsDate').value = formatDateDMY(now);
 
-  // ── Current selected device ──
+  // ── CURRENT SELECTED DEVICE ──
   document.getElementById('rsDevice').value = currentDevice;
 
   // Preview image
@@ -991,12 +990,12 @@ function openSingleRestamp(photo) {
   document.getElementById('rsBulkTimeRow').style.display = 'none';
   document.getElementById('rsTimeRow').style.display     = 'block';
   document.getElementById('restampTitle').textContent    = 'Re-stamp Photo';
-  document.getElementById('restampApplyBtn').textContent = 'Apply Re-stamp & Save';
+  document.getElementById('restampApplyBtn').textContent = 'Apply Re-stamp';
   document.getElementById('restampSheet').classList.add('open');
 }
 
 // ─── RE-STAMP: BULK ───────────────────────────────────────
-// ✅ AUTO-FILLS: live GPS location, today's date, current time as bulk start, current device
+// ✅ AUTO-FILLS: real-time GPS location, today's date, current time as bulk start, current device
 function bulkRestamp() {
   if (selectedIds.size === 0) { showStatus('No photos selected', 'error'); return; }
   isBulkRestamp = true;
@@ -1011,20 +1010,20 @@ function bulkRestamp() {
 
   const now = new Date();
 
-  // ── Live GPS location ──
+  // ── REAL CURRENT NOW GPS LOCATION ──
   document.getElementById('rsRoad').value     = document.getElementById('manualRoad').value;
   document.getElementById('rsTown').value     = document.getElementById('manualTown').value;
   document.getElementById('rsProvince').value = document.getElementById('manualProvince').value;
 
-  // ── Today's date ──
+  // ── REAL CURRENT NOW DATE (TODAY) ──
   document.getElementById('rsDate').value = formatDateDMY(now);
 
-  // ── Bulk start time defaults to current time ──
+  // ── REAL CURRENT NOW TIME as bulk start ──
   const ch = now.getHours().toString().padStart(2,'0');
   const cm = now.getMinutes().toString().padStart(2,'0');
   document.getElementById('rsBulkStart').value = ch + ':' + cm;
 
-  // ── Current device ──
+  // ── CURRENT DEVICE ──
   document.getElementById('rsDevice').value = currentDevice;
 
   // Show auto-fill badge
@@ -1037,7 +1036,7 @@ function bulkRestamp() {
   document.querySelectorAll('.restamp-sheet .photo-type-opt')[0].classList.add('sel');
 
   document.getElementById('restampTitle').textContent    = 'Bulk Re-stamp (' + restampIds.length + ' photos)';
-  document.getElementById('restampApplyBtn').textContent = 'Apply to ' + restampIds.length + ' Photos';
+  document.getElementById('restampApplyBtn').textContent = 'Apply Re-stamp';
   document.getElementById('restampSheet').classList.add('open');
 }
 
@@ -1063,21 +1062,20 @@ async function applyRestamp() {
     quality: parseInt(document.getElementById('rsQuality').value) / 100
   };
 
-  // ── Bulk: distribute times evenly from start → now ──
+  // ── Bulk: generate RANDOM times starting from start time ──
   let timeSlots = [];
   if (isBulkRestamp && restampIds.length > 1) {
     const startStr  = document.getElementById('rsBulkStart').value || '09:00';
     const [sh, sm]  = startStr.split(':').map(Number);
     const startMins = sh * 60 + sm;
-    const now       = new Date();
-    const endMins   = now.getHours() * 60 + now.getMinutes();
-    let range       = endMins - startMins;
-    if (range <= 0) range += 1440;
-    const n        = restampIds.length;
-    const interval = n > 1 ? Math.floor(range / (n - 1)) : 0;
-    for (let i = 0; i < n; i++) {
-      let mins = startMins + i * interval;
-      if (mins >= 1440) mins -= 1440;
+    
+    // Generate random times: start time + random offset (0 to 480 mins = 8 hours)
+    for (let i = 0; i < restampIds.length; i++) {
+      const randomOffset = Math.floor(Math.random() * 480); // 0-480 mins (0-8 hours)
+      let mins = startMins + randomOffset;
+      
+      if (mins >= 1440) mins -= 1440; // Wrap to next day if needed
+      
       const h    = Math.floor(mins / 60) % 24;
       const m    = mins % 60;
       const ampm = h >= 12 ? 'PM' : 'AM';
