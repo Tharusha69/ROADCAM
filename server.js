@@ -6,10 +6,10 @@ const fs = require('fs');
 const cors = require('cors');
 
 const app = express();
+const PORT = process.env.PORT || 3000;
 
 // /data folder එකට point කරන්න
 const uploadsDir = path.join('/data', 'uploads');
-const PORT = process.env.PORT || 8080;
 
 // Create uploads directory if it doesn't exist
 if (!fs.existsSync('/data')) fs.mkdirSync('/data', { recursive: true });
@@ -39,7 +39,11 @@ db.serialize(() => {
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb' }));
-app.use('/uploads', express.static(uploadsDir));
+app.use("/uploads", (req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+  next();
+}, express.static(uploadsDir));
 app.use(express.static(__dirname));
 
 // Multer configuration
@@ -144,6 +148,28 @@ app.get('/api/stats', (req, res) => {
   });
 });
 
+
+// Re-stamp: update metadata + replace file in-place
+app.put("/api/restamp/:id", upload.single("photo"), (req, res) => {
+  const { id } = req.params;
+  const { type, date, time, timestamp, location, device } = req.body;
+  db.get("SELECT filepath FROM photos WHERE id = ?", [id], (err, photo) => {
+    if (err || !photo) return res.status(404).json({ error: "Photo not found" });
+    if (req.file) {
+      const oldPath = path.join("/data", photo.filepath);
+      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      const newFilepath = "/uploads/" + req.file.filename;
+      db.run("UPDATE photos SET type=?,date=?,time=?,timestamp=?,location=?,device=?,filename=?,filepath=? WHERE id=?",
+        [type,date,time,timestamp,location,device,req.file.filename,newFilepath,id],
+        function(err){ if(err) return res.status(500).json({error:err.message}); res.json({success:true,id,filepath:newFilepath}); });
+    } else {
+      db.run("UPDATE photos SET type=?,date=?,time=?,timestamp=?,location=?,device=? WHERE id=?",
+        [type,date,time,timestamp,location,device,id],
+        function(err){ if(err) return res.status(500).json({error:err.message}); res.json({success:true,id,filepath:photo.filepath}); });
+    }
+  });
+});
+
 // Delete photo
 app.delete('/api/photos/:id', (req, res) => {
   const { id } = req.params;
@@ -209,11 +235,9 @@ app.get('/dashboard', (req, res) => {
   res.sendFile(path.join(__dirname, 'dashboard.html'));
 });
 
-
-// ...
-
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`📊 Dashboard: http://localhost:${PORT}/dashboard.html`);
 });
 
 process.on('SIGINT', () => {
@@ -221,3 +245,4 @@ process.on('SIGINT', () => {
   console.log('Database connection closed');
   process.exit(0);
 });
+// ── PATCH: Re-stamp route ──────────────────────────────────
