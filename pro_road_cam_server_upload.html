@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Pro Road Cam v8.1</title>
+<title>Pro Road Cam v8.2</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Plus Jakarta Sans',system-ui,sans-serif}
@@ -148,7 +148,7 @@ select.sfield option{background:#030a06}
 .upload-status.error{background:rgba(239,68,68,0.95);color:#fff;box-shadow:0 4px 20px rgba(239,68,68,0.3)}
 .upload-status.info{background:rgba(59,130,246,0.95);color:#fff}
 
-/* ── NEW: DIRECT UPLOAD OVERLAY ─────────────────────────── */
+/* ── DIRECT UPLOAD OVERLAY ─────────────────────────── */
 .direct-upload-overlay{position:fixed;inset:0;background:#030a06;z-index:200;display:none;flex-direction:column}
 .direct-upload-overlay.open{display:flex}
 .du-header{width:100%;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.06)}
@@ -307,7 +307,7 @@ select.sfield option{background:#030a06}
   <div class="preview-actions">
     <button class="p-btn" style="background:#1a1a1a;color:#fff" onclick="closePreview()">Retake</button>
     <button class="p-btn" style="background:#6366f1;color:#fff" id="shareBtn">Share</button>
-    <button class="p-btn" style="background:#00d97e;color:#000" id="downloadBtn">Save & Upload</button>
+    <button class="p-btn" style="background:#00d97e;color:#000" id="downloadBtn">Upload to Server</button>
   </div>
 </div>
 
@@ -830,6 +830,7 @@ function drawOverlay(ctx, tw, th, opts = {}) {
 }
 
 // ─── TAKE SNAPSHOT ────────────────────────────────────────
+// ✅ NO AUTO-DOWNLOAD: photos are uploaded to server only
 function takeSnapshot(autoSave = false, originalFile = null) {
   const ctx = canvas.getContext('2d');
   let tw, th;
@@ -859,8 +860,7 @@ function takeSnapshot(autoSave = false, originalFile = null) {
       const url   = URL.createObjectURL(stampedBlob);
       resultImg.src = url;
       if (autoSave) {
-        const a = document.createElement('a');
-        a.href = url; a.download = 'RoadCam_' + Date.now() + '.jpg'; a.click();
+        // Server upload only — no download to phone
         uploadToServer(origBlob, originalFile);
       } else {
         previewOverlay.style.display = 'flex';
@@ -871,7 +871,7 @@ function takeSnapshot(autoSave = false, originalFile = null) {
 
 // ─── UPLOAD TO SERVER ─────────────────────────────────────
 async function uploadToServer(blob, originalFileObj = null) {
-  if (!serverOnline) { showStatus('⚠️ Server offline — saved locally only', 'error'); return; }
+  if (!serverOnline) { showStatus('⚠️ Server offline — photo NOT saved', 'error'); return; }
 
   const now      = new Date();
   const road     = document.getElementById('manualRoad').value || 'Unknown Road';
@@ -906,9 +906,7 @@ async function uploadToServer(blob, originalFileObj = null) {
 // ─── PREVIEW ACTIONS ──────────────────────────────────────
 function closePreview() { previewOverlay.style.display = 'none'; }
 
-// ── iOS-compatible share ──────────────────────────────────
-// Strategy: try Web Share API with files, fall back to blob URL,
-// then fall back to plain download so it always works on iPhone.
+// ── iOS-compatible share (manual only — user chooses) ─────
 document.getElementById('shareBtn').onclick = async () => {
   if (!currentBlob) return;
   const file = new File([currentBlob], 'RoadCam_' + Date.now() + '.jpg', {type:'image/jpeg'});
@@ -941,21 +939,15 @@ document.getElementById('shareBtn').onclick = async () => {
   // 3. Last resort: open image in new tab so user can long-press to save (iOS)
   const tab = window.open(url, '_blank');
   if (!tab) {
-    // Pop-ups blocked — do a download link click
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = file.name;
-    a.click();
+    showStatus('⚠️ Pop-up blocked — allow pop-ups to share', 'error');
   }
   setTimeout(() => URL.revokeObjectURL(url), 5000);
 };
 
+// ✅ Upload button: server only — NO download to phone
 document.getElementById('downloadBtn').onclick = async () => {
-  const a = document.createElement('a');
-  a.href = resultImg.src;
-  a.download = 'RoadCam_' + Date.now() + '.jpg';
-  a.click();
   await uploadToServer(originalBlob);
+  closePreview();
 };
 
 // ─── ALBUM ────────────────────────────────────────────────
@@ -1161,8 +1153,6 @@ function openSingleRestamp(photo) {
 }
 
 // ─── RE-STAMP: BULK ───────────────────────────────────────
-// ✅ Start time (user sets) → End time = CURRENT TIME
-// ✅ Random times within [start, end] window
 function bulkRestamp() {
   if (selectedIds.size === 0) { showStatus('No photos selected', 'error'); return; }
   isBulkRestamp = true;
@@ -1185,11 +1175,11 @@ function bulkRestamp() {
   // Date = today
   document.getElementById('rsDate').value = formatDateDMY(now);
 
-  // ── End time = CURRENT TIME ──
+  // End time = CURRENT TIME
   const ch = now.getHours().toString().padStart(2,'0');
   const cm = now.getMinutes().toString().padStart(2,'0');
   document.getElementById('rsBulkEnd').value   = ch + ':' + cm;
-  document.getElementById('rsBulkStart').value = '09:00'; // sensible default, user can change
+  document.getElementById('rsBulkStart').value = '09:00';
 
   document.getElementById('rsDevice').value = currentDevice;
   document.getElementById('autofillBadge').style.display = 'inline-flex';
@@ -1227,7 +1217,7 @@ async function applyRestamp() {
     quality: parseInt(document.getElementById('rsQuality').value) / 100
   };
 
-  // ── Generate random times within [startTime, endTime] ──
+  // Generate random times within [startTime, endTime]
   let timeSlots = [];
   if (isBulkRestamp && restampIds.length > 0) {
     const startStr = document.getElementById('rsBulkStart').value || '09:00';
@@ -1265,6 +1255,7 @@ async function applyRestamp() {
   loadAlbum();
 }
 
+// ✅ NO AUTO-DOWNLOAD: re-stamped photo goes to server only
 async function restampAndUpload(photo, opts) {
   const location = [opts.road, opts.town, opts.province].filter(Boolean).join(', ');
   const img      = await loadImage(SERVER + photo.filepath);
@@ -1288,13 +1279,6 @@ async function restampAndUpload(photo, opts) {
   return new Promise((resolve, reject) => {
     canvas.toBlob(async blob => {
       if (!blob) return reject(new Error('Canvas toBlob failed'));
-
-      const url = URL.createObjectURL(blob);
-      const a   = document.createElement('a');
-      a.href     = url;
-      a.download = 'RoadCam_RS_' + Date.now() + '.jpg';
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 3000);
 
       const now = new Date();
       const fd  = new FormData();
@@ -1416,6 +1400,7 @@ function renderDuQueue() {
   });
 }
 
+// ✅ NO AUTO-DOWNLOAD: stamped photos go to server only
 async function duStartUpload() {
   if (!duFiles.length) return;
   if (!serverOnline) { showStatus('⚠️ Server offline', 'error'); return; }
@@ -1469,11 +1454,6 @@ async function duStartUpload() {
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, tw, th);
 
-      // Temporarily override manualRoad/Town/Province/Time for overlay draw
-      const savedRoad = document.getElementById('manualRoad').value;
-      const savedTown = document.getElementById('manualTown').value;
-      const savedProv = document.getElementById('manualProvince').value;
-
       drawOverlay(ctx, tw, th, {
         color:  color,
         time:   times[i],
@@ -1486,13 +1466,7 @@ async function duStartUpload() {
 
       const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', quality));
 
-      // Download stamped copy
-      const url = URL.createObjectURL(blob);
-      const a   = document.createElement('a');
-      a.href = url; a.download = 'RoadCam_DU_' + Date.now() + '.jpg'; a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 3000);
-
-      // Upload to server
+      // Upload to server (no download to phone)
       const now  = new Date();
       const fd   = new FormData();
       const fname = 'du_' + Date.now() + '.jpg';
