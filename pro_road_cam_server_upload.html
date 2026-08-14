@@ -253,11 +253,12 @@ select.sfield option{background:#030a06}
       <input type="text" id="manualTown" class="sfield" placeholder="Town / City">
       <input type="text" id="manualProvince" class="sfield" placeholder="Province">
     </div>
-    <span class="field-label">Time &amp; Date</span>
-    <div class="row2">
-      <input type="text" id="manualTime" class="sfield" placeholder="Time">
-      <input type="text" id="manualDate" class="sfield" placeholder="Date">
-    </div>
+    <span class="field-label">Time (manual override)</span>
+    <input type="time" id="manualTimeInput" class="sfield" step="60">
+    <div style="font-size:9px;color:rgba(255,255,255,0.4);margin-top:4px;margin-bottom:12px">Leave empty to use current time</div>
+    <span class="field-label">Date (manual override)</span>
+    <input type="date" id="manualDateInput" class="sfield">
+    <div style="font-size:9px;color:rgba(255,255,255,0.4);margin-top:4px">Leave empty to use today's date</div>
     <span class="field-label">Overlay Theme Color</span>
     <select id="themeSelect" class="sfield">
       <option value="green">Green (Default)</option>
@@ -271,6 +272,15 @@ select.sfield option{background:#030a06}
       <input type="range" id="jpegQuality" min="70" max="100" value="97" style="flex:1;accent-color:var(--g)">
       <span id="qualityLabel" style="font-size:11px;color:var(--g);font-weight:700;min-width:32px">97%</span>
     </div>
+    <span class="field-label">Auto-Reload Interval</span>
+    <select id="autoReloadInterval" class="sfield">
+      <option value="0">Off</option>
+      <option value="30">30 seconds</option>
+      <option value="60" selected>1 minute</option>
+      <option value="120">2 minutes</option>
+      <option value="300">5 minutes</option>
+      <option value="600">10 minutes</option>
+    </select>
     <span class="field-label">Bulk Upload Start Time</span>
     <div class="bulk-time-controls">
       <input type="time" id="bulkStartTime" class="sfield" value="09:00">
@@ -307,7 +317,8 @@ select.sfield option{background:#030a06}
   <div class="preview-actions">
     <button class="p-btn" style="background:#1a1a1a;color:#fff" onclick="closePreview()">Retake</button>
     <button class="p-btn" style="background:#6366f1;color:#fff" id="shareBtn">Share</button>
-    <button class="p-btn" style="background:#00d97e;color:#000" id="downloadBtn">Upload to Server</button>
+    <button class="p-btn" style="background:#3b82f6;color:#fff" id="downloadBtn">⬇ Download</button>
+    <button class="p-btn" style="background:#00d97e;color:#000" id="uploadBtn">Upload to Server</button>
   </div>
 </div>
 
@@ -328,6 +339,7 @@ select.sfield option{background:#030a06}
     <span class="select-info" id="selectInfo">0 selected</span>
     <div class="select-actions">
       <button class="sel-btn" style="background:rgba(255,255,255,0.1);color:#fff" onclick="selectAll()">All</button>
+      <button class="sel-btn" style="background:#3b82f6;color:#fff" onclick="bulkDownload()">⬇ Download</button>
       <button class="sel-btn" style="background:rgba(0,217,126,0.2);color:var(--g)" onclick="bulkRestamp()">Re-stamp</button>
       <button class="sel-btn" style="background:rgba(239,68,68,0.2);color:#ef4444" onclick="bulkDelete()">Delete</button>
     </div>
@@ -524,6 +536,7 @@ let currentPhotoType = 'poster';
 let gpsCoords        = '0.00000° N, 0.00000° E';
 let flashEnabled     = false;
 let serverOnline     = false;
+let autoReloadTimer  = null;
 
 let albumPhotos      = [];
 let filteredPhotos   = [];
@@ -619,8 +632,13 @@ function updateClock() {
   const dateStr = now.toLocaleDateString('en-GB') + ' • ' + now.toLocaleDateString('en-GB',{weekday:'long'});
   document.getElementById('dispTime').textContent = timeStr;
   document.getElementById('dispDate').textContent = dateStr;
-  document.getElementById('manualTime').value     = timeStr;
-  document.getElementById('manualDate').value     = now.toLocaleDateString('en-GB') + ' | ' + now.toLocaleDateString('en-GB',{weekday:'long'});
+  // Update manual fields only if not overridden
+  if (!document.getElementById('manualTimeInput').value) {
+    document.getElementById('manualTime').value = timeStr;
+  }
+  if (!document.getElementById('manualDateInput').value) {
+    document.getElementById('manualDate').value = now.toLocaleDateString('en-GB') + ' | ' + now.toLocaleDateString('en-GB',{weekday:'long'});
+  }
 }
 
 // ─── SETTINGS ─────────────────────────────────────────────
@@ -651,12 +669,36 @@ function applySettings() {
   const road = document.getElementById('manualRoad').value || 'Unknown Road';
   const town = document.getElementById('manualTown').value;
   const prov = document.getElementById('manualProvince').value;
+  
   document.getElementById('dispRoad').textContent = road.toUpperCase();
   document.getElementById('dispCity').textContent = [town,prov].filter(Boolean).join(', ');
   document.getElementById('deviceLabel').textContent = currentDevice;
+  
+  // Apply manual time if set
+  const manualTime = document.getElementById('manualTimeInput').value;
+  if (manualTime) {
+    const [h, m] = manualTime.split(':').map(Number);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const dh = h > 12 ? h - 12 : h === 0 ? 12 : h;
+    const timeStr = dh.toString().padStart(2,'0') + ':' + m.toString().padStart(2,'0') + ' ' + ampm;
+    document.getElementById('manualTime').value = timeStr;
+  }
+  
+  // Apply manual date if set
+  const manualDate = document.getElementById('manualDateInput').value;
+  if (manualDate) {
+    const d = new Date(manualDate + 'T00:00:00');
+    document.getElementById('manualDate').value = d.toLocaleDateString('en-GB') + ' | ' + d.toLocaleDateString('en-GB', {weekday:'long'});
+  }
+  
   const col = getThemeColor();
   document.documentElement.style.setProperty('--g', col);
   document.documentElement.style.setProperty('--gd', col);
+  
+  // Auto-reload configuration
+  const interval = parseInt(document.getElementById('autoReloadInterval').value);
+  setupAutoReload(interval);
+  
   toggleSheet();
 }
 function toggleFlash() {
@@ -664,6 +706,20 @@ function toggleFlash() {
   const btn = document.getElementById('flashBtn');
   btn.style.color       = flashEnabled ? '#00d97e' : '#fff';
   btn.style.borderColor = flashEnabled ? '#00d97e' : 'rgba(255,255,255,0.1)';
+}
+
+// ─── AUTO-RELOAD ──────────────────────────────────────────
+function setupAutoReload(intervalSeconds) {
+  if (autoReloadTimer) {
+    clearInterval(autoReloadTimer);
+    autoReloadTimer = null;
+  }
+  if (intervalSeconds > 0) {
+    autoReloadTimer = setInterval(() => {
+      location.reload();
+    }, intervalSeconds * 1000);
+    showStatus('🔄 Auto-reload every ' + intervalSeconds + 's', 'info', 3000);
+  }
 }
 
 // ─── INIT ─────────────────────────────────────────────────
@@ -830,7 +886,6 @@ function drawOverlay(ctx, tw, th, opts = {}) {
 }
 
 // ─── TAKE SNAPSHOT ────────────────────────────────────────
-// ✅ NO AUTO-DOWNLOAD: photos are uploaded to server only
 function takeSnapshot(autoSave = false, originalFile = null) {
   const ctx = canvas.getContext('2d');
   let tw, th;
@@ -860,13 +915,24 @@ function takeSnapshot(autoSave = false, originalFile = null) {
       const url   = URL.createObjectURL(stampedBlob);
       resultImg.src = url;
       if (autoSave) {
-        // Server upload only — no download to phone
         uploadToServer(origBlob, originalFile);
       } else {
         previewOverlay.style.display = 'flex';
       }
     }, 'image/jpeg', quality);
   }, 'image/jpeg', 1.0);
+}
+
+// ─── DOWNLOAD ─────────────────────────────────────────────
+function downloadPhoto(blob, filename = 'RoadCam_' + Date.now() + '.jpg') {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
 
 // ─── UPLOAD TO SERVER ─────────────────────────────────────
@@ -906,26 +972,38 @@ async function uploadToServer(blob, originalFileObj = null) {
 // ─── PREVIEW ACTIONS ──────────────────────────────────────
 function closePreview() { previewOverlay.style.display = 'none'; }
 
-// ── iOS-compatible share (manual only — user chooses) ─────
+// Download button handler
+document.getElementById('downloadBtn').onclick = function() {
+  if (currentBlob) {
+    downloadPhoto(currentBlob);
+    showStatus('⬇ Downloading photo…', 'info');
+  }
+};
+
+// Upload button handler
+document.getElementById('uploadBtn').onclick = async () => {
+  await uploadToServer(originalBlob);
+  closePreview();
+};
+
+// ── iOS-compatible share ──────────────────────────────────
 document.getElementById('shareBtn').onclick = async () => {
   if (!currentBlob) return;
   const file = new File([currentBlob], 'RoadCam_' + Date.now() + '.jpg', {type:'image/jpeg'});
 
-  // 1. Web Share API with file (iOS 15+ Safari supports this)
   if (navigator.canShare && navigator.canShare({files:[file]})) {
     try {
       await navigator.share({files:[file], title:'Road Cam Photo'});
       return;
     } catch(e) {
       if (e.name !== 'AbortError') {
-        // fall through to next strategy
+        // fall through
       } else {
-        return; // user cancelled
+        return;
       }
     }
   }
 
-  // 2. Web Share API without file (iOS 14 and below / Android fallback)
   const url = URL.createObjectURL(currentBlob);
   if (navigator.share) {
     try {
@@ -936,18 +1014,11 @@ document.getElementById('shareBtn').onclick = async () => {
     }
   }
 
-  // 3. Last resort: open image in new tab so user can long-press to save (iOS)
   const tab = window.open(url, '_blank');
   if (!tab) {
     showStatus('⚠️ Pop-up blocked — allow pop-ups to share', 'error');
   }
   setTimeout(() => URL.revokeObjectURL(url), 5000);
-};
-
-// ✅ Upload button: server only — NO download to phone
-document.getElementById('downloadBtn').onclick = async () => {
-  await uploadToServer(originalBlob);
-  closePreview();
 };
 
 // ─── ALBUM ────────────────────────────────────────────────
@@ -1089,6 +1160,26 @@ function selectAll() {
   updateSelectBar();
 }
 
+// ─── BULK DOWNLOAD ────────────────────────────────────────
+async function bulkDownload() {
+  if (selectedIds.size === 0) { showStatus('No photos selected', 'error'); return; }
+  showStatus('⏳ Preparing download…', 'info', 5000);
+  
+  for (const id of selectedIds) {
+    const photo = albumPhotos.find(p => p.id === id);
+    if (!photo) continue;
+    try {
+      const r = await fetch(SERVER + photo.filepath);
+      const blob = await r.blob();
+      downloadPhoto(blob, 'RoadCam_' + id + '.jpg');
+      await new Promise(r => setTimeout(r, 500));
+    } catch(e) {
+      console.error('Download failed', e);
+    }
+  }
+  showStatus('✅ Downloaded ' + selectedIds.size + ' photos!');
+}
+
 // ─── DELETE ───────────────────────────────────────────────
 async function bulkDelete() {
   if (selectedIds.size === 0) { showStatus('No photos selected', 'error'); return; }
@@ -1167,15 +1258,11 @@ function bulkRestamp() {
 
   const now = new Date();
 
-  // Live GPS
   document.getElementById('rsRoad').value     = document.getElementById('manualRoad').value;
   document.getElementById('rsTown').value     = document.getElementById('manualTown').value;
   document.getElementById('rsProvince').value = document.getElementById('manualProvince').value;
-
-  // Date = today
   document.getElementById('rsDate').value = formatDateDMY(now);
 
-  // End time = CURRENT TIME
   const ch = now.getHours().toString().padStart(2,'0');
   const cm = now.getMinutes().toString().padStart(2,'0');
   document.getElementById('rsBulkEnd').value   = ch + ':' + cm;
@@ -1217,7 +1304,6 @@ async function applyRestamp() {
     quality: parseInt(document.getElementById('rsQuality').value) / 100
   };
 
-  // Generate random times within [startTime, endTime]
   let timeSlots = [];
   if (isBulkRestamp && restampIds.length > 0) {
     const startStr = document.getElementById('rsBulkStart').value || '09:00';
@@ -1255,7 +1341,6 @@ async function applyRestamp() {
   loadAlbum();
 }
 
-// ✅ NO AUTO-DOWNLOAD: re-stamped photo goes to server only
 async function restampAndUpload(photo, opts) {
   const location = [opts.road, opts.town, opts.province].filter(Boolean).join(', ');
   const img      = await loadImage(SERVER + photo.filepath);
@@ -1319,13 +1404,11 @@ function loadImage(src) {
 // ─── DIRECT UPLOAD OVERLAY ────────────────────────────────
 function openDirectUpload() {
   const now = new Date();
-  // Pre-fill from current GPS / settings
   document.getElementById('duRoad').value     = document.getElementById('manualRoad').value;
   document.getElementById('duTown').value     = document.getElementById('manualTown').value;
   document.getElementById('duProvince').value = document.getElementById('manualProvince').value;
   document.getElementById('duDate').value     = formatDateDMY(now);
   document.getElementById('duDevice').value   = currentDevice;
-  // Time window: 09:00 → current time
   const ch = now.getHours().toString().padStart(2,'0');
   const cm = now.getMinutes().toString().padStart(2,'0');
   document.getElementById('duTimeEnd').value = ch + ':' + cm;
@@ -1400,7 +1483,6 @@ function renderDuQueue() {
   });
 }
 
-// ✅ NO AUTO-DOWNLOAD: stamped photos go to server only
 async function duStartUpload() {
   if (!duFiles.length) return;
   if (!serverOnline) { showStatus('⚠️ Server offline', 'error'); return; }
@@ -1435,7 +1517,6 @@ async function duStartUpload() {
     renderDuQueue();
 
     try {
-      // Load image and draw stamp overlay
       const img = await new Promise((res, rej) => {
         const r = new FileReader();
         r.onload = ev => {
@@ -1466,7 +1547,6 @@ async function duStartUpload() {
 
       const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', quality));
 
-      // Upload to server (no download to phone)
       const now  = new Date();
       const fd   = new FormData();
       const fname = 'du_' + Date.now() + '.jpg';
@@ -1496,7 +1576,6 @@ async function duStartUpload() {
   showStatus('✅ Uploaded ' + done + '/' + duFiles.length + ' photos!');
   btn.disabled = false;
 
-  // Auto-clear done items after 3s
   setTimeout(() => {
     duFiles = duFiles.filter(f => f.status !== 'done');
     renderDuQueue();
