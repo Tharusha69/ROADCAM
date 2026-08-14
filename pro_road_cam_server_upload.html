@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Pro Road Cam v8.2</title>
+<title>Pro Road Cam v8.3</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Plus Jakarta Sans',system-ui,sans-serif}
@@ -31,6 +31,11 @@ body{background:var(--bg);color:#fff;height:100vh;display:flex;flex-direction:co
 .gps-status.ok{color:var(--g)}
 .gps-status.searching{color:#fbbf24;animation:blink 1s infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+
+/* ── AUTO-RELOAD COUNTDOWN BADGE ── */
+.reload-badge{position:absolute;top:52px;right:16px;background:rgba(0,0,0,0.55);backdrop-filter:blur(12px);border:1px solid rgba(0,217,126,0.25);border-radius:8px;padding:4px 10px;font-size:9px;font-weight:700;color:rgba(255,255,255,0.5);z-index:11;display:none;cursor:pointer}
+.reload-badge.visible{display:block}
+.reload-badge span{color:var(--g)}
 
 .overlay-stamp{position:absolute;bottom:16px;left:12px;right:12px;z-index:10;pointer-events:none}
 .stamp-card{background:rgba(0,0,0,0.55);backdrop-filter:blur(20px);border:1px solid rgba(0,217,126,0.25);border-radius:14px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center}
@@ -74,14 +79,28 @@ select.sfield option{background:#030a06}
 .bulk-time-controls input{flex:1}
 .apply-btn{width:100%;margin-top:16px;padding:13px;background:var(--g);color:#000;border:none;border-radius:12px;font-size:12px;font-weight:800;cursor:pointer;text-transform:uppercase;letter-spacing:1px}
 
+/* datetime-local / time / date field color fix */
+input[type="time"].sfield,
+input[type="date"].sfield{color-scheme:dark;color:#fff}
+
+/* Manual time lock toggle */
+.dt-lock-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.dt-lock-row label{font-size:10px;color:rgba(255,255,255,0.55);cursor:pointer;flex:1}
+.dt-toggle{position:relative;width:32px;height:18px;flex-shrink:0}
+.dt-toggle input{opacity:0;width:0;height:0}
+.dt-slider{position:absolute;inset:0;background:rgba(255,255,255,0.15);border-radius:9px;cursor:pointer;transition:background 0.2s}
+.dt-toggle input:checked + .dt-slider{background:var(--g)}
+.dt-slider:before{content:'';position:absolute;width:12px;height:12px;left:3px;top:3px;background:#fff;border-radius:50%;transition:transform 0.2s}
+.dt-toggle input:checked + .dt-slider:before{transform:translateX(14px)}
+
 /* PREVIEW */
 .preview-overlay{position:fixed;inset:0;background:#030a06;z-index:200;display:none;flex-direction:column;align-items:center}
 .preview-header{width:100%;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.06)}
 .preview-header span{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:rgba(255,255,255,0.5)}
 .preview-img-wrap{flex:1;width:100%;display:flex;align-items:center;justify-content:center;padding:12px;overflow:hidden}
 #result-img{max-width:100%;max-height:100%;border-radius:12px;object-fit:contain}
-.preview-actions{width:100%;padding:16px 20px 24px;display:flex;gap:10px;flex-wrap:wrap}
-.p-btn{flex:1;min-width:100px;padding:14px;border-radius:12px;border:none;font-weight:800;cursor:pointer;font-size:11px;text-transform:uppercase;letter-spacing:0.5px}
+.preview-actions{width:100%;padding:12px 20px 24px;display:flex;gap:8px;flex-wrap:wrap}
+.p-btn{flex:1;min-width:80px;padding:13px;border-radius:12px;border:none;font-weight:800;cursor:pointer;font-size:11px;text-transform:uppercase;letter-spacing:0.5px}
 
 /* ALBUM */
 .album-overlay{position:fixed;inset:0;background:#030a06;z-index:200;display:none;flex-direction:column}
@@ -122,7 +141,7 @@ select.sfield option{background:#030a06}
 .select-bar{display:none;padding:10px 16px;background:rgba(0,217,126,0.1);border-top:1px solid rgba(0,217,126,0.2);border-bottom:1px solid rgba(0,217,126,0.2);align-items:center;justify-content:space-between}
 .select-bar.active{display:flex}
 .select-info{font-size:11px;font-weight:700;color:var(--g)}
-.select-actions{display:flex;gap:8px}
+.select-actions{display:flex;gap:8px;flex-wrap:wrap}
 .sel-btn{padding:7px 14px;border-radius:8px;border:none;font-size:10px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:0.5px}
 
 .db-actions{display:flex;gap:8px;padding:12px;border-top:1px solid rgba(255,255,255,0.06)}
@@ -202,6 +221,11 @@ select.sfield option{background:#030a06}
     <span class="gps-status searching" id="gpsStatus">Searching</span>
   </div>
 
+  <!-- AUTO-RELOAD COUNTDOWN BADGE -->
+  <div class="reload-badge" id="reloadBadge" onclick="location.reload()" title="Click to reload now">
+    Auto-reload in <span id="reloadCountdown">--</span>
+  </div>
+
   <video id="video" autoplay playsinline></video>
   <img id="up-prev" src="" alt="">
 
@@ -253,12 +277,28 @@ select.sfield option{background:#030a06}
       <input type="text" id="manualTown" class="sfield" placeholder="Town / City">
       <input type="text" id="manualProvince" class="sfield" placeholder="Province">
     </div>
-    <span class="field-label">Time (manual override)</span>
-    <input type="time" id="manualTimeInput" class="sfield" step="60">
-    <div style="font-size:9px;color:rgba(255,255,255,0.4);margin-top:4px;margin-bottom:12px">Leave empty to use current time</div>
-    <span class="field-label">Date (manual override)</span>
-    <input type="date" id="manualDateInput" class="sfield">
-    <div style="font-size:9px;color:rgba(255,255,255,0.4);margin-top:4px">Leave empty to use today's date</div>
+
+    <!-- ── DATE / TIME EDITING ── -->
+    <span class="field-label">Time</span>
+    <div class="dt-lock-row">
+      <label for="dtAutoTime">🕐 Auto-sync with clock</label>
+      <label class="dt-toggle">
+        <input type="checkbox" id="dtAutoTime" checked onchange="onAutoTimeToggle()">
+        <span class="dt-slider"></span>
+      </label>
+    </div>
+    <input type="time" id="manualTime" class="sfield" placeholder="HH:MM">
+
+    <span class="field-label">Date</span>
+    <div class="dt-lock-row">
+      <label for="dtAutoDate">📅 Auto-sync with today</label>
+      <label class="dt-toggle">
+        <input type="checkbox" id="dtAutoDate" checked onchange="onAutoDateToggle()">
+        <span class="dt-slider"></span>
+      </label>
+    </div>
+    <input type="date" id="manualDate" class="sfield">
+
     <span class="field-label">Overlay Theme Color</span>
     <select id="themeSelect" class="sfield">
       <option value="green">Green (Default)</option>
@@ -272,19 +312,22 @@ select.sfield option{background:#030a06}
       <input type="range" id="jpegQuality" min="70" max="100" value="97" style="flex:1;accent-color:var(--g)">
       <span id="qualityLabel" style="font-size:11px;color:var(--g);font-weight:700;min-width:32px">97%</span>
     </div>
-    <span class="field-label">Auto-Reload Interval</span>
-    <select id="autoReloadInterval" class="sfield">
-      <option value="0">Off</option>
-      <option value="30">30 seconds</option>
-      <option value="60" selected>1 minute</option>
-      <option value="120">2 minutes</option>
-      <option value="300">5 minutes</option>
-      <option value="600">10 minutes</option>
-    </select>
     <span class="field-label">Bulk Upload Start Time</span>
     <div class="bulk-time-controls">
       <input type="time" id="bulkStartTime" class="sfield" value="09:00">
     </div>
+
+    <!-- ── AUTO-RELOAD ── -->
+    <span class="field-label">Auto-Reload Interval</span>
+    <select id="autoReloadSelect" class="sfield" onchange="setAutoReload()">
+      <option value="0">Off</option>
+      <option value="5">Every 5 minutes</option>
+      <option value="10">Every 10 minutes</option>
+      <option value="30">Every 30 minutes</option>
+      <option value="60">Every 60 minutes</option>
+    </select>
+    <div style="font-size:9px;color:rgba(255,255,255,0.35);margin-top:4px">Page refreshes automatically to keep data current</div>
+
     <button class="apply-btn" onclick="applySettings()">Apply Settings</button>
   </div>
 </div>
@@ -305,7 +348,7 @@ select.sfield option{background:#030a06}
 
 <canvas id="canvas"></canvas>
 
-<!-- PREVIEW OVERLAY -->
+<!-- PREVIEW OVERLAY — now has 4 buttons: Retake | Download | Share | Upload -->
 <div class="preview-overlay" id="previewOverlay">
   <div class="preview-header">
     <span>Preview</span>
@@ -315,10 +358,10 @@ select.sfield option{background:#030a06}
     <img id="result-img" src="" alt="Captured photo">
   </div>
   <div class="preview-actions">
-    <button class="p-btn" style="background:#1a1a1a;color:#fff" onclick="closePreview()">Retake</button>
-    <button class="p-btn" style="background:#6366f1;color:#fff" id="shareBtn">Share</button>
-    <button class="p-btn" style="background:#3b82f6;color:#fff" id="downloadBtn">⬇ Download</button>
-    <button class="p-btn" style="background:#00d97e;color:#000" id="uploadBtn">Upload to Server</button>
+    <button class="p-btn" style="background:#1a1a1a;color:#fff" onclick="closePreview()">↩ Retake</button>
+    <button class="p-btn" style="background:#16a34a;color:#fff" id="downloadBtn">⬇ Download</button>
+    <button class="p-btn" style="background:#6366f1;color:#fff" id="shareBtn">↗ Share</button>
+    <button class="p-btn" style="background:#00d97e;color:#000" id="uploadServerBtn">⬆ Server</button>
   </div>
 </div>
 
@@ -339,7 +382,7 @@ select.sfield option{background:#030a06}
     <span class="select-info" id="selectInfo">0 selected</span>
     <div class="select-actions">
       <button class="sel-btn" style="background:rgba(255,255,255,0.1);color:#fff" onclick="selectAll()">All</button>
-      <button class="sel-btn" style="background:#3b82f6;color:#fff" onclick="bulkDownload()">⬇ Download</button>
+      <button class="sel-btn" style="background:rgba(22,163,74,0.2);color:#4ade80" onclick="bulkDownload()">⬇ DL</button>
       <button class="sel-btn" style="background:rgba(0,217,126,0.2);color:var(--g)" onclick="bulkRestamp()">Re-stamp</button>
       <button class="sel-btn" style="background:rgba(239,68,68,0.2);color:#ef4444" onclick="bulkDelete()">Delete</button>
     </div>
@@ -398,13 +441,11 @@ select.sfield option{background:#030a06}
       <input type="text" id="rsProvince" class="sfield" placeholder="Province">
     </div>
 
-    <!-- Single photo: manual time -->
     <div id="rsTimeRow">
       <span class="field-label">Time</span>
-      <input type="text" id="rsTime" class="sfield" placeholder="e.g. 09:30 AM">
+      <input type="time" id="rsTime" class="sfield" placeholder="e.g. 09:30">
     </div>
 
-    <!-- Bulk: start → end = now, random within range -->
     <div id="rsBulkTimeRow" style="display:none">
       <span class="field-label">Bulk Time Window</span>
       <div class="row2">
@@ -423,7 +464,7 @@ select.sfield option{background:#030a06}
     </div>
 
     <span class="field-label">Date</span>
-    <input type="text" id="rsDate" class="sfield" placeholder="e.g. 12/08/2026">
+    <input type="date" id="rsDate" class="sfield">
     <span class="field-label">Device</span>
     <input type="text" id="rsDevice" class="sfield" placeholder="Device name">
     <span class="field-label">Overlay Theme Color</span>
@@ -450,7 +491,6 @@ select.sfield option{background:#030a06}
     <button class="close-btn" onclick="closeDirectUpload()">✕</button>
   </div>
   <div class="du-body">
-    <!-- dropzone -->
     <div class="du-dropzone" id="duDropzone" onclick="document.getElementById('duFileInput').click()"
          ondragover="duDragOver(event)" ondragleave="duDragLeave(event)" ondrop="duDrop(event)">
       <div class="du-dropzone-icon">📂</div>
@@ -459,7 +499,6 @@ select.sfield option{background:#030a06}
     </div>
     <input type="file" id="duFileInput" accept="image/*" multiple onchange="duFilesChosen(event)">
 
-    <!-- meta fields -->
     <div class="du-meta">
       <div class="du-meta-title">Photo Metadata</div>
       <span class="field-label" style="margin-top:0">Photo Type</span>
@@ -475,7 +514,7 @@ select.sfield option{background:#030a06}
         <input type="text" id="duProvince" class="sfield" placeholder="Province">
       </div>
       <span class="field-label">Date</span>
-      <input type="text" id="duDate" class="sfield" placeholder="DD/MM/YYYY">
+      <input type="date" id="duDate" class="sfield">
       <span class="field-label">Time Window (random within range)</span>
       <div class="row2">
         <input type="time" id="duTimeStart" class="sfield" value="09:00">
@@ -501,7 +540,6 @@ select.sfield option{background:#030a06}
       </div>
     </div>
 
-    <!-- queue list -->
     <div class="du-queue" id="duQueue"></div>
   </div>
   <div class="du-actions">
@@ -536,7 +574,6 @@ let currentPhotoType = 'poster';
 let gpsCoords        = '0.00000° N, 0.00000° E';
 let flashEnabled     = false;
 let serverOnline     = false;
-let autoReloadTimer  = null;
 
 let albumPhotos      = [];
 let filteredPhotos   = [];
@@ -549,13 +586,25 @@ let restampIds       = [];
 let restampType      = 'poster';
 let isBulkRestamp    = false;
 
-// Direct upload state
-let duFiles          = [];   // [{file, status, timeStr}]
+let duFiles          = [];
 let duType           = 'poster';
+
+// ── Auto-reload state ─────────────────────────────────────
+let autoReloadMins   = 0;   // 0 = off
+let reloadSecsLeft   = 0;
+let reloadTimerID    = null;
+
+// ── Date/time manual-lock flags ───────────────────────────
+let autoSyncTime     = true;
+let autoSyncDate     = true;
 
 const themeColors = {green:'#00d97e',blue:'#3b82f6',amber:'#f59e0b',red:'#ef4444',white:'#ffffff'};
 
 // ─── HELPERS ──────────────────────────────────────────────
+function formatTime24(date) {
+  date = date || new Date();
+  return date.getHours().toString().padStart(2,'0') + ':' + date.getMinutes().toString().padStart(2,'0');
+}
 function formatTime12(date) {
   date = date || new Date();
   const h    = date.getHours();
@@ -564,10 +613,16 @@ function formatTime12(date) {
   const dh   = h > 12 ? h - 12 : h === 0 ? 12 : h;
   return dh.toString().padStart(2,'0') + ':' + m.toString().padStart(2,'0') + ' ' + ampm;
 }
-
+function formatDateISO(date) {
+  date = date || new Date();
+  const y = date.getFullYear();
+  const m = (date.getMonth()+1).toString().padStart(2,'0');
+  const d = date.getDate().toString().padStart(2,'0');
+  return y + '-' + m + '-' + d;  // YYYY-MM-DD for <input type="date">
+}
 function formatDateDMY(date) {
   date = date || new Date();
-  return date.toLocaleDateString('en-GB');
+  return date.toLocaleDateString('en-GB');  // DD/MM/YYYY display
 }
 
 // Convert HH:MM string → minutes since midnight
@@ -575,7 +630,6 @@ function hmToMins(hm) {
   const [h, m] = hm.split(':').map(Number);
   return h * 60 + m;
 }
-
 // Convert minutes since midnight → "HH:MM AM/PM"
 function minsTo12(mins) {
   mins = ((mins % 1440) + 1440) % 1440;
@@ -585,21 +639,36 @@ function minsTo12(mins) {
   const dh   = h > 12 ? h - 12 : h === 0 ? 12 : h;
   return dh.toString().padStart(2,'0') + ':' + m.toString().padStart(2,'0') + ' ' + ampm;
 }
-
-// Current time as HH:MM (24h) for <input type="time">
 function currentHM() {
   const now = new Date();
-  return now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+  return formatTime24(now);
 }
-
-// Generate n random time strings within [startMins, endMins]
 function randomTimeSlots(startMins, endMins, n) {
   let range = endMins - startMins;
-  if (range <= 0) range += 1440; // spans midnight
+  if (range <= 0) range += 1440;
   return Array.from({length: n}, () => {
     const offset = Math.floor(Math.random() * (range + 1));
     return minsTo12(startMins + offset);
   });
+}
+
+// Read the manualTime field as a 12h display string
+function getManualTimeDisplay() {
+  const val = document.getElementById('manualTime').value; // HH:MM (24h)
+  if (!val) return formatTime12();
+  const [h, m] = val.split(':').map(Number);
+  const ampm   = h >= 12 ? 'PM' : 'AM';
+  const dh     = h > 12 ? h - 12 : h === 0 ? 12 : h;
+  return dh.toString().padStart(2,'0') + ':' + m.toString().padStart(2,'0') + ' ' + ampm;
+}
+
+// Read the manualDate field as a friendly display string
+function getManualDateDisplay() {
+  const val = document.getElementById('manualDate').value; // YYYY-MM-DD
+  if (!val) return formatDateDMY();
+  const [y, m, d] = val.split('-');
+  const dt  = new Date(parseInt(y), parseInt(m)-1, parseInt(d));
+  return dt.toLocaleDateString('en-GB') + ' • ' + dt.toLocaleDateString('en-GB',{weekday:'long'});
 }
 
 // ─── TOAST ────────────────────────────────────────────────
@@ -627,18 +696,72 @@ async function checkServer() {
 
 // ─── CLOCK ────────────────────────────────────────────────
 function updateClock() {
-  const now     = new Date();
+  const now = new Date();
+  // Only update HUD display — always live
   const timeStr = now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true});
   const dateStr = now.toLocaleDateString('en-GB') + ' • ' + now.toLocaleDateString('en-GB',{weekday:'long'});
   document.getElementById('dispTime').textContent = timeStr;
   document.getElementById('dispDate').textContent = dateStr;
-  // Update manual fields only if not overridden
-  if (!document.getElementById('manualTimeInput').value) {
-    document.getElementById('manualTime').value = timeStr;
+  // Only push into fields if user hasn't locked them manually
+  if (autoSyncTime) {
+    document.getElementById('manualTime').value = formatTime24(now);
   }
-  if (!document.getElementById('manualDateInput').value) {
-    document.getElementById('manualDate').value = now.toLocaleDateString('en-GB') + ' | ' + now.toLocaleDateString('en-GB',{weekday:'long'});
+  if (autoSyncDate) {
+    document.getElementById('manualDate').value = formatDateISO(now);
   }
+}
+
+// ─── DATETIME LOCK TOGGLES ────────────────────────────────
+function onAutoTimeToggle() {
+  autoSyncTime = document.getElementById('dtAutoTime').checked;
+  const field  = document.getElementById('manualTime');
+  field.disabled = autoSyncTime;
+  if (autoSyncTime) {
+    field.value = formatTime24(new Date());
+    field.style.opacity = '0.5';
+  } else {
+    field.style.opacity = '1';
+    field.focus();
+  }
+}
+function onAutoDateToggle() {
+  autoSyncDate = document.getElementById('dtAutoDate').checked;
+  const field  = document.getElementById('manualDate');
+  field.disabled = autoSyncDate;
+  if (autoSyncDate) {
+    field.value = formatDateISO(new Date());
+    field.style.opacity = '0.5';
+  } else {
+    field.style.opacity = '1';
+    field.focus();
+  }
+}
+
+// ─── AUTO-RELOAD ──────────────────────────────────────────
+function setAutoReload() {
+  clearInterval(reloadTimerID);
+  reloadTimerID = null;
+  autoReloadMins = parseInt(document.getElementById('autoReloadSelect').value) || 0;
+  const badge = document.getElementById('reloadBadge');
+  if (autoReloadMins > 0) {
+    reloadSecsLeft = autoReloadMins * 60;
+    badge.classList.add('visible');
+    tickReload();
+    reloadTimerID = setInterval(tickReload, 1000);
+  } else {
+    badge.classList.remove('visible');
+  }
+}
+function tickReload() {
+  reloadSecsLeft--;
+  if (reloadSecsLeft <= 0) {
+    location.reload();
+    return;
+  }
+  const mins = Math.floor(reloadSecsLeft / 60);
+  const secs = reloadSecsLeft % 60;
+  document.getElementById('reloadCountdown').textContent =
+    mins > 0 ? mins + 'm ' + secs.toString().padStart(2,'0') + 's' : secs + 's';
 }
 
 // ─── SETTINGS ─────────────────────────────────────────────
@@ -669,36 +792,13 @@ function applySettings() {
   const road = document.getElementById('manualRoad').value || 'Unknown Road';
   const town = document.getElementById('manualTown').value;
   const prov = document.getElementById('manualProvince').value;
-  
   document.getElementById('dispRoad').textContent = road.toUpperCase();
   document.getElementById('dispCity').textContent = [town,prov].filter(Boolean).join(', ');
   document.getElementById('deviceLabel').textContent = currentDevice;
-  
-  // Apply manual time if set
-  const manualTime = document.getElementById('manualTimeInput').value;
-  if (manualTime) {
-    const [h, m] = manualTime.split(':').map(Number);
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    const dh = h > 12 ? h - 12 : h === 0 ? 12 : h;
-    const timeStr = dh.toString().padStart(2,'0') + ':' + m.toString().padStart(2,'0') + ' ' + ampm;
-    document.getElementById('manualTime').value = timeStr;
-  }
-  
-  // Apply manual date if set
-  const manualDate = document.getElementById('manualDateInput').value;
-  if (manualDate) {
-    const d = new Date(manualDate + 'T00:00:00');
-    document.getElementById('manualDate').value = d.toLocaleDateString('en-GB') + ' | ' + d.toLocaleDateString('en-GB', {weekday:'long'});
-  }
-  
   const col = getThemeColor();
   document.documentElement.style.setProperty('--g', col);
   document.documentElement.style.setProperty('--gd', col);
-  
-  // Auto-reload configuration
-  const interval = parseInt(document.getElementById('autoReloadInterval').value);
-  setupAutoReload(interval);
-  
+  setAutoReload();  // apply any reload setting change
   toggleSheet();
 }
 function toggleFlash() {
@@ -708,22 +808,17 @@ function toggleFlash() {
   btn.style.borderColor = flashEnabled ? '#00d97e' : 'rgba(255,255,255,0.1)';
 }
 
-// ─── AUTO-RELOAD ──────────────────────────────────────────
-function setupAutoReload(intervalSeconds) {
-  if (autoReloadTimer) {
-    clearInterval(autoReloadTimer);
-    autoReloadTimer = null;
-  }
-  if (intervalSeconds > 0) {
-    autoReloadTimer = setInterval(() => {
-      location.reload();
-    }, intervalSeconds * 1000);
-    showStatus('🔄 Auto-reload every ' + intervalSeconds + 's', 'info', 3000);
-  }
-}
-
 // ─── INIT ─────────────────────────────────────────────────
 async function initApp() {
+  // Initialise date/time fields and disable them (auto-sync on)
+  const now = new Date();
+  document.getElementById('manualTime').value    = formatTime24(now);
+  document.getElementById('manualDate').value    = formatDateISO(now);
+  document.getElementById('manualTime').disabled = true;
+  document.getElementById('manualTime').style.opacity = '0.5';
+  document.getElementById('manualDate').disabled = true;
+  document.getElementById('manualDate').style.opacity = '0.5';
+
   updateClock();
   setInterval(updateClock, 1000);
   checkServer();
@@ -802,7 +897,11 @@ bulkInput.onchange = async e => {
   for (let i = 0; i < n; i++) {
     let mins = startMins + i * interval;
     if (mins >= 1440) mins -= 1440;
-    document.getElementById('manualTime').value = minsTo12(mins);
+    // Override the time field temporarily for this shot
+    const overrideEl = document.getElementById('manualTime');
+    const savedAuto  = autoSyncTime;
+    autoSyncTime = false;
+    overrideEl.value = Math.floor(mins/60).toString().padStart(2,'0') + ':' + (mins%60).toString().padStart(2,'0');
 
     await new Promise(res => {
       const r = new FileReader();
@@ -816,6 +915,7 @@ bulkInput.onchange = async e => {
       };
       r.readAsDataURL(files[i]);
     });
+    autoSyncTime = savedAuto;
     await new Promise(r => setTimeout(r, 1200));
   }
   bulkInput.value = '';
@@ -824,11 +924,11 @@ bulkInput.onchange = async e => {
 
 // ─── DRAW OVERLAY ─────────────────────────────────────────
 function drawOverlay(ctx, tw, th, opts = {}) {
-  const col        = opts.color || getThemeColor();
-  const timeText   = opts.time  || document.getElementById('manualTime').value || document.getElementById('dispTime').textContent;
-  const dateText   = opts.date  || document.getElementById('manualDate').value || document.getElementById('dispDate').textContent;
-  const roadText   = (opts.road || document.getElementById('manualRoad').value || 'Unknown Road').toUpperCase();
-  const cityText   = opts.city  || [document.getElementById('manualTown').value, document.getElementById('manualProvince').value].filter(Boolean).join(', ');
+  const col        = opts.color  || getThemeColor();
+  const timeText   = opts.time   || getManualTimeDisplay();
+  const dateText   = opts.date   || getManualDateDisplay();
+  const roadText   = (opts.road  || document.getElementById('manualRoad').value || 'Unknown Road').toUpperCase();
+  const cityText   = opts.city   || [document.getElementById('manualTown').value, document.getElementById('manualProvince').value].filter(Boolean).join(', ');
   const coordsText = opts.coords || gpsCoords;
   const deviceText = opts.device || currentDevice;
 
@@ -923,18 +1023,6 @@ function takeSnapshot(autoSave = false, originalFile = null) {
   }, 'image/jpeg', 1.0);
 }
 
-// ─── DOWNLOAD ─────────────────────────────────────────────
-function downloadPhoto(blob, filename = 'RoadCam_' + Date.now() + '.jpg') {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
-}
-
 // ─── UPLOAD TO SERVER ─────────────────────────────────────
 async function uploadToServer(blob, originalFileObj = null) {
   if (!serverOnline) { showStatus('⚠️ Server offline — photo NOT saved', 'error'); return; }
@@ -944,8 +1032,8 @@ async function uploadToServer(blob, originalFileObj = null) {
   const town     = document.getElementById('manualTown').value;
   const prov     = document.getElementById('manualProvince').value;
   const location = [road, town, prov].filter(Boolean).join(', ');
-  const timeVal  = document.getElementById('manualTime').value || now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true});
-  const dateVal  = now.toISOString().split('T')[0];
+  const timeVal  = getManualTimeDisplay();
+  const dateVal  = document.getElementById('manualDate').value || formatDateISO(now);
 
   const fd       = new FormData();
   const uploadBlob = originalFileObj || blob;
@@ -969,56 +1057,50 @@ async function uploadToServer(blob, originalFileObj = null) {
   }
 }
 
+// ─── DOWNLOAD HELPER ──────────────────────────────────────
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a   = document.createElement('a');
+  a.href     = url;
+  a.download = filename;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); document.body.removeChild(a); }, 2000);
+}
+
 // ─── PREVIEW ACTIONS ──────────────────────────────────────
 function closePreview() { previewOverlay.style.display = 'none'; }
 
-// Download button handler
-document.getElementById('downloadBtn').onclick = function() {
-  if (currentBlob) {
-    downloadPhoto(currentBlob);
-    showStatus('⬇ Downloading photo…', 'info');
-  }
+// Download stamped photo to device
+document.getElementById('downloadBtn').onclick = () => {
+  if (!currentBlob) return;
+  downloadBlob(currentBlob, 'RoadCam_' + Date.now() + '.jpg');
+  showStatus('⬇️ Downloaded to device!');
 };
 
-// Upload button handler
-document.getElementById('uploadBtn').onclick = async () => {
-  await uploadToServer(originalBlob);
-  closePreview();
-};
-
-// ── iOS-compatible share ──────────────────────────────────
+// Share
 document.getElementById('shareBtn').onclick = async () => {
   if (!currentBlob) return;
   const file = new File([currentBlob], 'RoadCam_' + Date.now() + '.jpg', {type:'image/jpeg'});
-
   if (navigator.canShare && navigator.canShare({files:[file]})) {
-    try {
-      await navigator.share({files:[file], title:'Road Cam Photo'});
-      return;
-    } catch(e) {
-      if (e.name !== 'AbortError') {
-        // fall through
-      } else {
-        return;
-      }
-    }
+    try { await navigator.share({files:[file], title:'Road Cam Photo'}); return; }
+    catch(e) { if (e.name === 'AbortError') return; }
   }
-
   const url = URL.createObjectURL(currentBlob);
   if (navigator.share) {
-    try {
-      await navigator.share({title:'Road Cam Photo', url});
-      return;
-    } catch(e) {
-      if (e.name === 'AbortError') { URL.revokeObjectURL(url); return; }
-    }
+    try { await navigator.share({title:'Road Cam Photo', url}); return; }
+    catch(e) { if (e.name === 'AbortError') { URL.revokeObjectURL(url); return; } }
   }
-
   const tab = window.open(url, '_blank');
-  if (!tab) {
-    showStatus('⚠️ Pop-up blocked — allow pop-ups to share', 'error');
-  }
+  if (!tab) showStatus('⚠️ Pop-up blocked — allow pop-ups to share', 'error');
   setTimeout(() => URL.revokeObjectURL(url), 5000);
+};
+
+// Upload stamped photo to server
+document.getElementById('uploadServerBtn').onclick = async () => {
+  await uploadToServer(originalBlob);
+  closePreview();
 };
 
 // ─── ALBUM ────────────────────────────────────────────────
@@ -1160,24 +1242,25 @@ function selectAll() {
   updateSelectBar();
 }
 
-// ─── BULK DOWNLOAD ────────────────────────────────────────
+// ─── BULK DOWNLOAD FROM ALBUM ─────────────────────────────
 async function bulkDownload() {
   if (selectedIds.size === 0) { showStatus('No photos selected', 'error'); return; }
-  showStatus('⏳ Preparing download…', 'info', 5000);
-  
-  for (const id of selectedIds) {
-    const photo = albumPhotos.find(p => p.id === id);
-    if (!photo) continue;
+  const toDownload = filteredPhotos.filter(p => selectedIds.has(p.id));
+  showStatus('⬇️ Downloading ' + toDownload.length + ' photo(s)…', 'info', 15000);
+  let done = 0;
+  for (const photo of toDownload) {
     try {
-      const r = await fetch(SERVER + photo.filepath);
-      const blob = await r.blob();
-      downloadPhoto(blob, 'RoadCam_' + id + '.jpg');
-      await new Promise(r => setTimeout(r, 500));
+      const res  = await fetch(SERVER + photo.filepath);
+      const blob = await res.blob();
+      const name = 'RoadCam_' + photo.id + '_' + (photo.date || 'photo') + '.jpg';
+      downloadBlob(blob, name);
+      done++;
+      await new Promise(r => setTimeout(r, 500)); // stagger downloads
     } catch(e) {
-      console.error('Download failed', e);
+      console.error('Download failed for', photo.id, e);
     }
   }
-  showStatus('✅ Downloaded ' + selectedIds.size + ' photos!');
+  showStatus('✅ Downloaded ' + done + ' photo(s)!');
 }
 
 // ─── DELETE ───────────────────────────────────────────────
@@ -1212,8 +1295,8 @@ function exportDB() { window.location.href = SERVER + '/api/export'; }
 
 // ─── RE-STAMP: SINGLE ─────────────────────────────────────
 function openSingleRestamp(photo) {
-  restampIds   = [photo.id];
-  restampType  = photo.type;
+  restampIds  = [photo.id];
+  restampType = photo.type;
 
   const now      = new Date();
   const liveRoad = document.getElementById('manualRoad').value;
@@ -1224,8 +1307,8 @@ function openSingleRestamp(photo) {
   document.getElementById('rsRoad').value     = liveRoad || locParts[0] || '';
   document.getElementById('rsTown').value     = liveTown || locParts[1] || '';
   document.getElementById('rsProvince').value = liveProv || locParts[2] || '';
-  document.getElementById('rsTime').value     = formatTime12(now);
-  document.getElementById('rsDate').value     = formatDateDMY(now);
+  document.getElementById('rsTime').value     = formatTime24(now);
+  document.getElementById('rsDate').value     = formatDateISO(now);
   document.getElementById('rsDevice').value   = currentDevice;
 
   const pv = document.getElementById('restampPreviews');
@@ -1257,18 +1340,13 @@ function bulkRestamp() {
   ).join('') + '</div>';
 
   const now = new Date();
-
   document.getElementById('rsRoad').value     = document.getElementById('manualRoad').value;
   document.getElementById('rsTown').value     = document.getElementById('manualTown').value;
   document.getElementById('rsProvince').value = document.getElementById('manualProvince').value;
-  document.getElementById('rsDate').value = formatDateDMY(now);
-
-  const ch = now.getHours().toString().padStart(2,'0');
-  const cm = now.getMinutes().toString().padStart(2,'0');
-  document.getElementById('rsBulkEnd').value   = ch + ':' + cm;
+  document.getElementById('rsDate').value     = formatDateISO(now);
+  document.getElementById('rsBulkEnd').value   = formatTime24(now);
   document.getElementById('rsBulkStart').value = '09:00';
-
-  document.getElementById('rsDevice').value = currentDevice;
+  document.getElementById('rsDevice').value    = currentDevice;
   document.getElementById('autofillBadge').style.display = 'inline-flex';
 
   document.getElementById('rsBulkTimeRow').style.display = 'block';
@@ -1287,21 +1365,27 @@ function setRestampType(el, type) {
   el.classList.add('sel');
   restampType = type;
 }
-
 function closeRestamp() {
   document.getElementById('restampSheet').classList.remove('open');
 }
 
 async function applyRestamp() {
   const baseOpts = {
-    road:    document.getElementById('rsRoad').value,
-    town:    document.getElementById('rsTown').value,
-    province:document.getElementById('rsProvince').value,
-    date:    document.getElementById('rsDate').value,
-    device:  document.getElementById('rsDevice').value,
-    type:    restampType,
-    color:   themeColors[document.getElementById('rsTheme').value] || '#00d97e',
-    quality: parseInt(document.getElementById('rsQuality').value) / 100
+    road:     document.getElementById('rsRoad').value,
+    town:     document.getElementById('rsTown').value,
+    province: document.getElementById('rsProvince').value,
+    date:     (() => {
+      // convert YYYY-MM-DD to DD/MM/YYYY for overlay display
+      const v = document.getElementById('rsDate').value;
+      if (!v) return formatDateDMY();
+      const [y,m,d] = v.split('-');
+      return d + '/' + m + '/' + y + ' • ' + new Date(parseInt(y),parseInt(m)-1,parseInt(d)).toLocaleDateString('en-GB',{weekday:'long'});
+    })(),
+    isoDate:  document.getElementById('rsDate').value,
+    device:   document.getElementById('rsDevice').value,
+    type:     restampType,
+    color:    themeColors[document.getElementById('rsTheme').value] || '#00d97e',
+    quality:  parseInt(document.getElementById('rsQuality').value) / 100
   };
 
   let timeSlots = [];
@@ -1312,8 +1396,16 @@ async function applyRestamp() {
     const endM     = hmToMins(endStr);
     timeSlots      = randomTimeSlots(startM, endM, restampIds.length);
   } else {
-    const t = document.getElementById('rsTime').value;
-    timeSlots = restampIds.map(() => t);
+    // rsTime is HH:MM — convert to 12h display
+    const v = document.getElementById('rsTime').value;
+    let t12 = formatTime12();
+    if (v) {
+      const [h, m] = v.split(':').map(Number);
+      const ampm   = h >= 12 ? 'PM' : 'AM';
+      const dh     = h > 12 ? h - 12 : h === 0 ? 12 : h;
+      t12 = dh.toString().padStart(2,'0') + ':' + m.toString().padStart(2,'0') + ' ' + ampm;
+    }
+    timeSlots = restampIds.map(() => t12);
   }
 
   closeRestamp();
@@ -1325,12 +1417,8 @@ async function applyRestamp() {
     const photo = albumPhotos.find(p => p.id === id);
     if (!photo) continue;
     const opts  = { ...baseOpts, time: timeSlots[i] };
-    try {
-      await restampAndUpload(photo, opts);
-      done++;
-    } catch(e) {
-      console.error('Restamp failed for', id, e);
-    }
+    try { await restampAndUpload(photo, opts); done++; }
+    catch(e) { console.error('Restamp failed for', id, e); }
   }
 
   showStatus('✅ Re-stamped ' + done + ' photo(s)!');
@@ -1344,7 +1432,6 @@ async function applyRestamp() {
 async function restampAndUpload(photo, opts) {
   const location = [opts.road, opts.town, opts.province].filter(Boolean).join(', ');
   const img      = await loadImage(SERVER + photo.filepath);
-
   const tw = img.naturalWidth  || img.width;
   const th = img.naturalHeight || img.height;
   canvas.width = tw; canvas.height = th;
@@ -1364,24 +1451,20 @@ async function restampAndUpload(photo, opts) {
   return new Promise((resolve, reject) => {
     canvas.toBlob(async blob => {
       if (!blob) return reject(new Error('Canvas toBlob failed'));
-
       const now = new Date();
       const fd  = new FormData();
       fd.append('photo',     new File([blob], 'rs_' + Date.now() + '.jpg', {type:'image/jpeg'}));
       fd.append('type',      opts.type);
-      fd.append('date',      opts.date || now.toISOString().split('T')[0]);
+      fd.append('date',      opts.isoDate || now.toISOString().split('T')[0]);
       fd.append('time',      opts.time || photo.time);
       fd.append('timestamp', now.toLocaleString());
       fd.append('location',  location || photo.location);
       fd.append('device',    opts.device || photo.device);
-
       try {
         const r = await fetch(SERVER + '/api/restamp/' + photo.id, {method:'PUT', body:fd});
         const d = await r.json();
-        if (d.success) resolve(d);
-        else reject(new Error(d.error || 'Restamp failed'));
+        if (d.success) resolve(d); else reject(new Error(d.error || 'Restamp failed'));
       } catch(e) { reject(e); }
-
     }, 'image/jpeg', opts.quality);
   });
 }
@@ -1407,44 +1490,28 @@ function openDirectUpload() {
   document.getElementById('duRoad').value     = document.getElementById('manualRoad').value;
   document.getElementById('duTown').value     = document.getElementById('manualTown').value;
   document.getElementById('duProvince').value = document.getElementById('manualProvince').value;
-  document.getElementById('duDate').value     = formatDateDMY(now);
+  document.getElementById('duDate').value     = formatDateISO(now);
   document.getElementById('duDevice').value   = currentDevice;
-  const ch = now.getHours().toString().padStart(2,'0');
-  const cm = now.getMinutes().toString().padStart(2,'0');
-  document.getElementById('duTimeEnd').value = ch + ':' + cm;
-
+  document.getElementById('duTimeEnd').value  = formatTime24(now);
   document.getElementById('directUploadOverlay').classList.add('open');
 }
-
 function closeDirectUpload() {
   document.getElementById('directUploadOverlay').classList.remove('open');
 }
-
 function setDuType(el, type) {
   document.querySelectorAll('#directUploadOverlay .photo-type-opt').forEach(d => d.classList.remove('sel'));
   el.classList.add('sel');
   duType = type;
 }
 
-// Drag & drop
-function duDragOver(e) {
-  e.preventDefault();
-  document.getElementById('duDropzone').classList.add('drag-over');
-}
-function duDragLeave(e) {
-  document.getElementById('duDropzone').classList.remove('drag-over');
-}
+function duDragOver(e) { e.preventDefault(); document.getElementById('duDropzone').classList.add('drag-over'); }
+function duDragLeave(e) { document.getElementById('duDropzone').classList.remove('drag-over'); }
 function duDrop(e) {
   e.preventDefault();
   document.getElementById('duDropzone').classList.remove('drag-over');
-  const files = e.dataTransfer.files;
-  if (files.length) addDuFiles(files);
+  if (e.dataTransfer.files.length) addDuFiles(e.dataTransfer.files);
 }
-
-function duFilesChosen(e) {
-  if (e.target.files.length) addDuFiles(e.target.files);
-  e.target.value = '';
-}
+function duFilesChosen(e) { if (e.target.files.length) addDuFiles(e.target.files); e.target.value = ''; }
 
 function addDuFiles(files) {
   for (const f of files) {
@@ -1454,29 +1521,26 @@ function addDuFiles(files) {
   renderDuQueue();
   document.getElementById('duUploadBtn').disabled = duFiles.length === 0;
 }
-
 function removeDuFile(idx) {
   duFiles.splice(idx, 1);
   renderDuQueue();
   document.getElementById('duUploadBtn').disabled = duFiles.length === 0;
 }
-
 function renderDuQueue() {
   const container = document.getElementById('duQueue');
   container.innerHTML = '';
   duFiles.forEach((item, idx) => {
-    const el = document.createElement('div');
+    const el  = document.createElement('div');
     el.className = 'du-item';
     const url = URL.createObjectURL(item.file);
-    const statusClass = item.status;
-    const statusText  = {pending:'Pending',uploading:'Uploading…',done:'Done ✓',error:'Error ✗'}[item.status] || '';
+    const statusText = {pending:'Pending',uploading:'Uploading…',done:'Done ✓',error:'Error ✗'}[item.status] || '';
     el.innerHTML = `
       <img class="du-item-thumb" src="${url}">
       <div class="du-item-info">
         <div class="du-item-name">${item.file.name}</div>
         <div class="du-item-size">${(item.file.size/1024).toFixed(0)} KB</div>
       </div>
-      <div class="du-item-status ${statusClass}">${statusText}</div>
+      <div class="du-item-status ${item.status}">${statusText}</div>
       <button class="du-item-remove" onclick="removeDuFile(${idx})">✕</button>
     `;
     container.appendChild(el);
@@ -1493,29 +1557,33 @@ async function duStartUpload() {
   const endM     = hmToMins(endStr);
   const times    = randomTimeSlots(startM, endM, duFiles.length);
 
-  const road   = document.getElementById('duRoad').value     || 'Unknown Road';
-  const town   = document.getElementById('duTown').value;
-  const prov   = document.getElementById('duProvince').value;
-  const date   = document.getElementById('duDate').value;
-  const device = document.getElementById('duDevice').value   || currentDevice;
-  const quality= parseInt(document.getElementById('duQuality').value) / 100;
-  const color  = themeColors[document.getElementById('duTheme').value] || '#00d97e';
+  const road    = document.getElementById('duRoad').value     || 'Unknown Road';
+  const town    = document.getElementById('duTown').value;
+  const prov    = document.getElementById('duProvince').value;
+  // duDate is YYYY-MM-DD — convert for display on stamp
+  const isoDate = document.getElementById('duDate').value;
+  let dateDisplay = formatDateDMY();
+  if (isoDate) {
+    const [y,m,d] = isoDate.split('-');
+    const dt = new Date(parseInt(y),parseInt(m)-1,parseInt(d));
+    dateDisplay = dt.toLocaleDateString('en-GB') + ' • ' + dt.toLocaleDateString('en-GB',{weekday:'long'});
+  }
+  const device   = document.getElementById('duDevice').value   || currentDevice;
+  const quality  = parseInt(document.getElementById('duQuality').value) / 100;
+  const color    = themeColors[document.getElementById('duTheme').value] || '#00d97e';
   const location = [road, town, prov].filter(Boolean).join(', ');
 
   const btn = document.getElementById('duUploadBtn');
   btn.disabled = true;
-
   const progressBar  = document.getElementById('duProgressBar');
   const progressFill = document.getElementById('duProgressFill');
   progressBar.style.display = 'block';
-
   showStatus('⏳ Uploading ' + duFiles.length + ' photo(s)…', 'info', 120000);
 
   let done = 0;
   for (let i = 0; i < duFiles.length; i++) {
     duFiles[i].status = 'uploading';
     renderDuQueue();
-
     try {
       const img = await new Promise((res, rej) => {
         const r = new FileReader();
@@ -1529,30 +1597,23 @@ async function duStartUpload() {
         r.readAsDataURL(duFiles[i].file);
       });
 
-      const tw = img.naturalWidth;
-      const th = img.naturalHeight;
+      const tw = img.naturalWidth; const th = img.naturalHeight;
       canvas.width = tw; canvas.height = th;
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, tw, th);
-
       drawOverlay(ctx, tw, th, {
-        color:  color,
-        time:   times[i],
-        date:   date,
-        road:   road,
-        city:   [town, prov].filter(Boolean).join(', '),
-        coords: gpsCoords,
-        device: device
+        color: color, time: times[i], date: dateDisplay,
+        road: road, city: [town, prov].filter(Boolean).join(', '),
+        coords: gpsCoords, device: device
       });
 
       const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', quality));
-
       const now  = new Date();
       const fd   = new FormData();
       const fname = 'du_' + Date.now() + '.jpg';
       fd.append('photo',     new File([blob], fname, {type:'image/jpeg'}), fname);
       fd.append('type',      duType);
-      fd.append('date',      now.toISOString().split('T')[0]);
+      fd.append('date',      isoDate || now.toISOString().split('T')[0]);
       fd.append('time',      times[i]);
       fd.append('timestamp', now.toLocaleString());
       fd.append('location',  location);
@@ -1562,12 +1623,10 @@ async function duStartUpload() {
       const d = await r.json();
       if (d.success) { duFiles[i].status = 'done'; done++; }
       else            { duFiles[i].status = 'error'; }
-
     } catch(e) {
       duFiles[i].status = 'error';
       console.error('DU upload error', e);
     }
-
     progressFill.style.width = ((i+1)/duFiles.length*100) + '%';
     renderDuQueue();
     await new Promise(r => setTimeout(r, 400));
@@ -1575,7 +1634,6 @@ async function duStartUpload() {
 
   showStatus('✅ Uploaded ' + done + '/' + duFiles.length + ' photos!');
   btn.disabled = false;
-
   setTimeout(() => {
     duFiles = duFiles.filter(f => f.status !== 'done');
     renderDuQueue();
