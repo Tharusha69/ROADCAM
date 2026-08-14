@@ -179,7 +179,7 @@ app.get('/api/health', (req, res) => {
 
 // HTML Page Route
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
+  res.sendFile(path.join(__dirname, 'pro_road_cam_server_upload.html'));
 });
 
 app.listen(PORT, '0.0.0.0', () => {
