@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Pro Road Cam v8.0</title>
+<title>Pro Road Cam v8.1</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Plus Jakarta Sans',system-ui,sans-serif}
@@ -18,7 +18,7 @@ body{background:var(--bg);color:#fff;height:100vh;display:flex;flex-direction:co
 .device-dot{width:8px;height:8px;border-radius:50%;background:var(--g);animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.8)}}
 .device-name{font-size:11px;font-weight:700;letter-spacing:0.8px;opacity:0.85;text-transform:uppercase}
-.hud-right{display:flex;gap:8px;align-items:center}
+.hud-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .badge-btn{background:rgba(255,255,255,0.12);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.15);color:#fff;padding:6px 14px;border-radius:20px;font-size:10px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:0.5px;transition:all 0.2s}
 .badge-btn:hover{background:rgba(255,255,255,0.2)}
 .server-dot{width:7px;height:7px;border-radius:50%;background:#ef4444;display:inline-block;margin-right:4px;transition:background 0.3s}
@@ -147,6 +147,37 @@ select.sfield option{background:#030a06}
 .upload-status.show{display:flex}
 .upload-status.error{background:rgba(239,68,68,0.95);color:#fff;box-shadow:0 4px 20px rgba(239,68,68,0.3)}
 .upload-status.info{background:rgba(59,130,246,0.95);color:#fff}
+
+/* ── NEW: DIRECT UPLOAD OVERLAY ─────────────────────────── */
+.direct-upload-overlay{position:fixed;inset:0;background:#030a06;z-index:200;display:none;flex-direction:column}
+.direct-upload-overlay.open{display:flex}
+.du-header{width:100%;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.06)}
+.du-body{flex:1;overflow-y:auto;padding:16px}
+.du-dropzone{border:2px dashed rgba(0,217,126,0.3);border-radius:16px;padding:32px 16px;text-align:center;cursor:pointer;transition:all 0.2s;margin-bottom:16px;background:rgba(0,217,126,0.03)}
+.du-dropzone:hover,.du-dropzone.drag-over{border-color:var(--g);background:rgba(0,217,126,0.08)}
+.du-dropzone-icon{font-size:36px;margin-bottom:8px}
+.du-dropzone-text{font-size:13px;font-weight:700;color:rgba(255,255,255,0.8)}
+.du-dropzone-sub{font-size:10px;color:rgba(255,255,255,0.4);margin-top:4px}
+.du-queue{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.du-item{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px}
+.du-item-thumb{width:48px;height:48px;border-radius:6px;object-fit:cover;flex-shrink:0}
+.du-item-info{flex:1;min-width:0}
+.du-item-name{font-size:11px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.du-item-size{font-size:9px;color:rgba(255,255,255,0.4);margin-top:2px}
+.du-item-status{font-size:10px;font-weight:700}
+.du-item-status.pending{color:rgba(255,255,255,0.4)}
+.du-item-status.uploading{color:#3b82f6}
+.du-item-status.done{color:var(--g)}
+.du-item-status.error{color:#ef4444}
+.du-item-remove{background:rgba(239,68,68,0.15);border:none;color:#ef4444;width:24px;height:24px;border-radius:50%;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.du-meta{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:14px;margin-bottom:16px}
+.du-meta-title{font-size:10px;font-weight:800;color:var(--g);letter-spacing:0.8px;text-transform:uppercase;margin-bottom:12px}
+.du-progress-bar{height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;margin-top:8px;display:none}
+.du-progress-fill{height:100%;background:var(--g);border-radius:2px;width:0%;transition:width 0.3s}
+.du-actions{display:flex;gap:10px;padding:0 0 16px}
+.du-upload-btn{flex:1;padding:14px;background:var(--g);color:#000;border:none;border-radius:12px;font-size:12px;font-weight:800;cursor:pointer;text-transform:uppercase;letter-spacing:1px}
+.du-upload-btn:disabled{opacity:0.4;cursor:not-allowed}
+.du-clear-btn{padding:14px 20px;background:rgba(255,255,255,0.07);color:#fff;border:1px solid rgba(255,255,255,0.1);border-radius:12px;font-size:12px;font-weight:700;cursor:pointer}
 </style>
 </head>
 <body>
@@ -160,6 +191,7 @@ select.sfield option{background:#030a06}
     <div class="hud-right">
       <span style="font-size:10px;font-weight:700;display:flex;align-items:center"><span class="server-dot" id="serverDot"></span><span id="serverStatus">Connecting…</span></span>
       <div class="badge-btn" onclick="openAlbum()">📷 Album</div>
+      <div class="badge-btn" onclick="openDirectUpload()">⬆️ Upload</div>
       <div class="badge-btn" onclick="toggleSheet()">⚙ Settings</div>
     </div>
   </div>
@@ -274,7 +306,7 @@ select.sfield option{background:#030a06}
   </div>
   <div class="preview-actions">
     <button class="p-btn" style="background:#1a1a1a;color:#fff" onclick="closePreview()">Retake</button>
-    <button class="p-btn" style="background:#007aff;color:#fff" id="shareBtn">Share</button>
+    <button class="p-btn" style="background:#6366f1;color:#fff" id="shareBtn">Share</button>
     <button class="p-btn" style="background:#00d97e;color:#000" id="downloadBtn">Save & Upload</button>
   </div>
 </div>
@@ -292,7 +324,6 @@ select.sfield option{background:#030a06}
     </div>
   </div>
 
-  <!-- BULK SELECT BAR -->
   <div class="select-bar" id="selectBar">
     <span class="select-info" id="selectInfo">0 selected</span>
     <div class="select-actions">
@@ -336,7 +367,6 @@ select.sfield option{background:#030a06}
       <button class="close-btn" onclick="closeRestamp()">✕</button>
     </div>
 
-    <!-- Auto-fill indicator badge -->
     <div class="autofill-badge" id="autofillBadge">
       <span>⊙</span> Live GPS + Current Time Auto-filled
     </div>
@@ -355,16 +385,31 @@ select.sfield option{background:#030a06}
       <input type="text" id="rsTown" class="sfield" placeholder="Town / City">
       <input type="text" id="rsProvince" class="sfield" placeholder="Province">
     </div>
+
     <!-- Single photo: manual time -->
     <div id="rsTimeRow">
       <span class="field-label">Time</span>
       <input type="text" id="rsTime" class="sfield" placeholder="e.g. 09:30 AM">
     </div>
-    <!-- Bulk: start time → random times onwards -->
+
+    <!-- Bulk: start → end = now, random within range -->
     <div id="rsBulkTimeRow" style="display:none">
-      <span class="field-label">Bulk Start Time (random times from start onwards)</span>
-      <input type="time" id="rsBulkStart" class="sfield" value="09:00">
+      <span class="field-label">Bulk Time Window</span>
+      <div class="row2">
+        <div>
+          <span class="field-label" style="margin-top:0">Start Time</span>
+          <input type="time" id="rsBulkStart" class="sfield" value="09:00">
+        </div>
+        <div>
+          <span class="field-label" style="margin-top:0">End Time</span>
+          <input type="time" id="rsBulkEnd" class="sfield">
+        </div>
+      </div>
+      <div style="font-size:9px;color:rgba(255,255,255,0.4);margin-top:6px">
+        ⊙ End time auto-set to current time. Random times generated within window.
+      </div>
     </div>
+
     <span class="field-label">Date</span>
     <input type="text" id="rsDate" class="sfield" placeholder="e.g. 12/08/2026">
     <span class="field-label">Device</span>
@@ -386,6 +431,73 @@ select.sfield option{background:#030a06}
   </div>
 </div>
 
+<!-- ── DIRECT UPLOAD OVERLAY ──────────────────────────────── -->
+<div class="direct-upload-overlay" id="directUploadOverlay">
+  <div class="du-header">
+    <span class="sheet-title">Upload Photos to Server</span>
+    <button class="close-btn" onclick="closeDirectUpload()">✕</button>
+  </div>
+  <div class="du-body">
+    <!-- dropzone -->
+    <div class="du-dropzone" id="duDropzone" onclick="document.getElementById('duFileInput').click()"
+         ondragover="duDragOver(event)" ondragleave="duDragLeave(event)" ondrop="duDrop(event)">
+      <div class="du-dropzone-icon">📂</div>
+      <div class="du-dropzone-text">Tap to choose photos</div>
+      <div class="du-dropzone-sub">or drag &amp; drop here • JPG, PNG, HEIC</div>
+    </div>
+    <input type="file" id="duFileInput" accept="image/*" multiple onchange="duFilesChosen(event)">
+
+    <!-- meta fields -->
+    <div class="du-meta">
+      <div class="du-meta-title">Photo Metadata</div>
+      <span class="field-label" style="margin-top:0">Photo Type</span>
+      <div class="photo-type-row" style="margin-bottom:10px">
+        <div class="photo-type-opt sel" onclick="setDuType(this,'poster')">📸 Poster Photo</div>
+        <div class="photo-type-opt" onclick="setDuType(this,'self')">🤳 Self Photo</div>
+      </div>
+      <span class="field-label">Road Name</span>
+      <input type="text" id="duRoad" class="sfield" placeholder="Road Name">
+      <span class="field-label">Town / City &amp; Province</span>
+      <div class="row2">
+        <input type="text" id="duTown" class="sfield" placeholder="Town / City">
+        <input type="text" id="duProvince" class="sfield" placeholder="Province">
+      </div>
+      <span class="field-label">Date</span>
+      <input type="text" id="duDate" class="sfield" placeholder="DD/MM/YYYY">
+      <span class="field-label">Time Window (random within range)</span>
+      <div class="row2">
+        <input type="time" id="duTimeStart" class="sfield" value="09:00">
+        <input type="time" id="duTimeEnd" class="sfield">
+      </div>
+      <span class="field-label">Device</span>
+      <input type="text" id="duDevice" class="sfield" placeholder="Device name">
+      <span class="field-label">Overlay Theme Color</span>
+      <select id="duTheme" class="sfield">
+        <option value="green">Green</option>
+        <option value="blue">Blue</option>
+        <option value="amber">Amber</option>
+        <option value="red">Red</option>
+        <option value="white">White</option>
+      </select>
+      <span class="field-label">JPEG Quality</span>
+      <div style="display:flex;align-items:center;gap:10px">
+        <input type="range" id="duQuality" min="70" max="100" value="97" style="flex:1;accent-color:var(--g)">
+        <span id="duQualityLabel" style="font-size:11px;color:var(--g);font-weight:700;min-width:32px">97%</span>
+      </div>
+      <div class="du-progress-bar" id="duProgressBar">
+        <div class="du-progress-fill" id="duProgressFill"></div>
+      </div>
+    </div>
+
+    <!-- queue list -->
+    <div class="du-queue" id="duQueue"></div>
+  </div>
+  <div class="du-actions">
+    <button class="du-clear-btn" onclick="duClear()">Clear</button>
+    <button class="du-upload-btn" id="duUploadBtn" onclick="duStartUpload()" disabled>Upload All</button>
+  </div>
+</div>
+
 <!-- STATUS TOAST -->
 <div class="upload-status" id="uploadStatus"></div>
 
@@ -394,40 +506,43 @@ select.sfield option{background:#030a06}
 const SERVER = window.location.origin;
 
 // ─── STATE ────────────────────────────────────────────────
-const video        = document.getElementById('video');
-const canvas       = document.getElementById('canvas');
-const resultImg    = document.getElementById('result-img');
+const video          = document.getElementById('video');
+const canvas         = document.getElementById('canvas');
+const resultImg      = document.getElementById('result-img');
 const previewOverlay = document.getElementById('previewOverlay');
-const fileInput    = document.getElementById('fileInput');
-const bulkInput    = document.getElementById('bulkInput');
-const upPrev       = document.getElementById('up-prev');
-const qualitySlider= document.getElementById('jpegQuality');
-const qualityLabel = document.getElementById('qualityLabel');
+const fileInput      = document.getElementById('fileInput');
+const bulkInput      = document.getElementById('bulkInput');
+const upPrev         = document.getElementById('up-prev');
+const qualitySlider  = document.getElementById('jpegQuality');
+const qualityLabel   = document.getElementById('qualityLabel');
 
-let currentBlob    = null;
-let originalBlob   = null;
-let isUpload       = false;
-let currentDevice  = 'iPhone 14 Pro Max';
+let currentBlob      = null;
+let originalBlob     = null;
+let isUpload         = false;
+let currentDevice    = 'iPhone 14 Pro Max';
 let currentPhotoType = 'poster';
-let gpsCoords      = '0.00000° N, 0.00000° E';
-let flashEnabled   = false;
-let serverOnline   = false;
+let gpsCoords        = '0.00000° N, 0.00000° E';
+let flashEnabled     = false;
+let serverOnline     = false;
 
-let albumPhotos    = [];
-let filteredPhotos = [];
-let currentFilter  = 'all';
-let currentView    = 'grid';
-let selectMode     = false;
-let selectedIds    = new Set();
+let albumPhotos      = [];
+let filteredPhotos   = [];
+let currentFilter    = 'all';
+let currentView      = 'grid';
+let selectMode       = false;
+let selectedIds      = new Set();
 
-let restampIds     = [];
-let restampType    = 'poster';
-let isBulkRestamp  = false;
+let restampIds       = [];
+let restampType      = 'poster';
+let isBulkRestamp    = false;
 
-const themeColors  = {green:'#00d97e',blue:'#3b82f6',amber:'#f59e0b',red:'#ef4444',white:'#ffffff'};
+// Direct upload state
+let duFiles          = [];   // [{file, status, timeStr}]
+let duType           = 'poster';
+
+const themeColors = {green:'#00d97e',blue:'#3b82f6',amber:'#f59e0b',red:'#ef4444',white:'#ffffff'};
 
 // ─── HELPERS ──────────────────────────────────────────────
-// Returns "HH:MM AM/PM" for a given Date (or now if omitted)
 function formatTime12(date) {
   date = date || new Date();
   const h    = date.getHours();
@@ -437,10 +552,41 @@ function formatTime12(date) {
   return dh.toString().padStart(2,'0') + ':' + m.toString().padStart(2,'0') + ' ' + ampm;
 }
 
-// Returns "DD/MM/YYYY" for a given Date (or now if omitted)
 function formatDateDMY(date) {
   date = date || new Date();
-  return date.toLocaleDateString('en-GB'); // DD/MM/YYYY
+  return date.toLocaleDateString('en-GB');
+}
+
+// Convert HH:MM string → minutes since midnight
+function hmToMins(hm) {
+  const [h, m] = hm.split(':').map(Number);
+  return h * 60 + m;
+}
+
+// Convert minutes since midnight → "HH:MM AM/PM"
+function minsTo12(mins) {
+  mins = ((mins % 1440) + 1440) % 1440;
+  const h    = Math.floor(mins / 60);
+  const m    = mins % 60;
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const dh   = h > 12 ? h - 12 : h === 0 ? 12 : h;
+  return dh.toString().padStart(2,'0') + ':' + m.toString().padStart(2,'0') + ' ' + ampm;
+}
+
+// Current time as HH:MM (24h) for <input type="time">
+function currentHM() {
+  const now = new Date();
+  return now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+}
+
+// Generate n random time strings within [startMins, endMins]
+function randomTimeSlots(startMins, endMins, n) {
+  let range = endMins - startMins;
+  if (range <= 0) range += 1440; // spans midnight
+  return Array.from({length: n}, () => {
+    const offset = Math.floor(Math.random() * (range + 1));
+    return minsTo12(startMins + offset);
+  });
 }
 
 // ─── TOAST ────────────────────────────────────────────────
@@ -471,16 +617,19 @@ function updateClock() {
   const now     = new Date();
   const timeStr = now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true});
   const dateStr = now.toLocaleDateString('en-GB') + ' • ' + now.toLocaleDateString('en-GB',{weekday:'long'});
-  document.getElementById('dispTime').textContent    = timeStr;
-  document.getElementById('dispDate').textContent    = dateStr;
-  document.getElementById('manualTime').value        = timeStr;
-  document.getElementById('manualDate').value        = now.toLocaleDateString('en-GB') + ' | ' + now.toLocaleDateString('en-GB',{weekday:'long'});
+  document.getElementById('dispTime').textContent = timeStr;
+  document.getElementById('dispDate').textContent = dateStr;
+  document.getElementById('manualTime').value     = timeStr;
+  document.getElementById('manualDate').value     = now.toLocaleDateString('en-GB') + ' | ' + now.toLocaleDateString('en-GB',{weekday:'long'});
 }
 
 // ─── SETTINGS ─────────────────────────────────────────────
 qualitySlider.oninput = () => qualityLabel.textContent = qualitySlider.value + '%';
 document.getElementById('rsQuality').oninput = function() {
   document.getElementById('rsQualityLabel').textContent = this.value + '%';
+};
+document.getElementById('duQuality').oninput = function() {
+  document.getElementById('duQualityLabel').textContent = this.value + '%';
 };
 
 function getThemeColor() {
@@ -597,11 +746,7 @@ bulkInput.onchange = async e => {
   for (let i = 0; i < n; i++) {
     let mins = startMins + i * interval;
     if (mins >= 1440) mins -= 1440;
-    const h    = Math.floor(mins / 60) % 24;
-    const m    = mins % 60;
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    const dh   = h > 12 ? h-12 : h === 0 ? 12 : h;
-    document.getElementById('manualTime').value = dh.toString().padStart(2,'0') + ':' + m.toString().padStart(2,'0') + ' ' + ampm;
+    document.getElementById('manualTime').value = minsTo12(mins);
 
     await new Promise(res => {
       const r = new FileReader();
@@ -623,13 +768,13 @@ bulkInput.onchange = async e => {
 
 // ─── DRAW OVERLAY ─────────────────────────────────────────
 function drawOverlay(ctx, tw, th, opts = {}) {
-  const col       = opts.color || getThemeColor();
-  const timeText  = opts.time  || document.getElementById('manualTime').value || document.getElementById('dispTime').textContent;
-  const dateText  = opts.date  || document.getElementById('manualDate').value || document.getElementById('dispDate').textContent;
-  const roadText  = (opts.road || document.getElementById('manualRoad').value || 'Unknown Road').toUpperCase();
-  const cityText  = opts.city  || [document.getElementById('manualTown').value, document.getElementById('manualProvince').value].filter(Boolean).join(', ');
-  const coordsText= opts.coords || gpsCoords;
-  const deviceText= opts.device || currentDevice;
+  const col        = opts.color || getThemeColor();
+  const timeText   = opts.time  || document.getElementById('manualTime').value || document.getElementById('dispTime').textContent;
+  const dateText   = opts.date  || document.getElementById('manualDate').value || document.getElementById('dispDate').textContent;
+  const roadText   = (opts.road || document.getElementById('manualRoad').value || 'Unknown Road').toUpperCase();
+  const cityText   = opts.city  || [document.getElementById('manualTown').value, document.getElementById('manualProvince').value].filter(Boolean).join(', ');
+  const coordsText = opts.coords || gpsCoords;
+  const deviceText = opts.device || currentDevice;
 
   const bh = tw > th ? th * 0.13 : th * 0.09;
   const m  = tw * 0.025;
@@ -761,21 +906,56 @@ async function uploadToServer(blob, originalFileObj = null) {
 // ─── PREVIEW ACTIONS ──────────────────────────────────────
 function closePreview() { previewOverlay.style.display = 'none'; }
 
+// ── iOS-compatible share ──────────────────────────────────
+// Strategy: try Web Share API with files, fall back to blob URL,
+// then fall back to plain download so it always works on iPhone.
+document.getElementById('shareBtn').onclick = async () => {
+  if (!currentBlob) return;
+  const file = new File([currentBlob], 'RoadCam_' + Date.now() + '.jpg', {type:'image/jpeg'});
+
+  // 1. Web Share API with file (iOS 15+ Safari supports this)
+  if (navigator.canShare && navigator.canShare({files:[file]})) {
+    try {
+      await navigator.share({files:[file], title:'Road Cam Photo'});
+      return;
+    } catch(e) {
+      if (e.name !== 'AbortError') {
+        // fall through to next strategy
+      } else {
+        return; // user cancelled
+      }
+    }
+  }
+
+  // 2. Web Share API without file (iOS 14 and below / Android fallback)
+  const url = URL.createObjectURL(currentBlob);
+  if (navigator.share) {
+    try {
+      await navigator.share({title:'Road Cam Photo', url});
+      return;
+    } catch(e) {
+      if (e.name === 'AbortError') { URL.revokeObjectURL(url); return; }
+    }
+  }
+
+  // 3. Last resort: open image in new tab so user can long-press to save (iOS)
+  const tab = window.open(url, '_blank');
+  if (!tab) {
+    // Pop-ups blocked — do a download link click
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = file.name;
+    a.click();
+  }
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+};
+
 document.getElementById('downloadBtn').onclick = async () => {
   const a = document.createElement('a');
   a.href = resultImg.src;
   a.download = 'RoadCam_' + Date.now() + '.jpg';
   a.click();
   await uploadToServer(originalBlob);
-};
-
-document.getElementById('shareBtn').onclick = async () => {
-  if (navigator.share && currentBlob) {
-    const f = new File([currentBlob], 'RoadCam.jpg', {type:'image/jpeg'});
-    try { await navigator.share({files:[f], title:''}); } catch(e) {}
-  } else {
-    document.getElementById('downloadBtn').click();
-  }
 };
 
 // ─── ALBUM ────────────────────────────────────────────────
@@ -948,42 +1128,28 @@ async function deleteByDate() {
 function exportDB() { window.location.href = SERVER + '/api/export'; }
 
 // ─── RE-STAMP: SINGLE ─────────────────────────────────────
-// ✅ AUTO-FILLS: current REAL-TIME NOW (live GPS location, current time, today's date, current device)
 function openSingleRestamp(photo) {
   restampIds   = [photo.id];
   restampType  = photo.type;
 
-  const now = new Date();
-
-  // ── REAL CURRENT NOW GPS LOCATION ──
+  const now      = new Date();
   const liveRoad = document.getElementById('manualRoad').value;
   const liveTown = document.getElementById('manualTown').value;
   const liveProv = document.getElementById('manualProvince').value;
-
   const locParts = (photo.location || '').split(',').map(s => s.trim());
 
   document.getElementById('rsRoad').value     = liveRoad || locParts[0] || '';
   document.getElementById('rsTown').value     = liveTown || locParts[1] || '';
   document.getElementById('rsProvince').value = liveProv || locParts[2] || '';
+  document.getElementById('rsTime').value     = formatTime12(now);
+  document.getElementById('rsDate').value     = formatDateDMY(now);
+  document.getElementById('rsDevice').value   = currentDevice;
 
-  // ── REAL CURRENT NOW TIME ──
-  document.getElementById('rsTime').value = formatTime12(now);
-
-  // ── REAL CURRENT NOW DATE (TODAY) ──
-  document.getElementById('rsDate').value = formatDateDMY(now);
-
-  // ── CURRENT SELECTED DEVICE ──
-  document.getElementById('rsDevice').value = currentDevice;
-
-  // Preview image
   const pv = document.getElementById('restampPreviews');
   pv.innerHTML = `<img class="restamp-preview" src="${SERVER}${photo.filepath}">`;
 
-  // Set photo type buttons
   document.querySelectorAll('.restamp-sheet .photo-type-opt').forEach(el => el.classList.remove('sel'));
   document.querySelectorAll('.restamp-sheet .photo-type-opt')[photo.type === 'self' ? 1 : 0].classList.add('sel');
-
-  // Show auto-fill badge
   document.getElementById('autofillBadge').style.display = 'inline-flex';
 
   isBulkRestamp = false;
@@ -995,7 +1161,8 @@ function openSingleRestamp(photo) {
 }
 
 // ─── RE-STAMP: BULK ───────────────────────────────────────
-// ✅ AUTO-FILLS: real-time GPS location, today's date, current time as bulk start, current device
+// ✅ Start time (user sets) → End time = CURRENT TIME
+// ✅ Random times within [start, end] window
 function bulkRestamp() {
   if (selectedIds.size === 0) { showStatus('No photos selected', 'error'); return; }
   isBulkRestamp = true;
@@ -1010,23 +1177,21 @@ function bulkRestamp() {
 
   const now = new Date();
 
-  // ── REAL CURRENT NOW GPS LOCATION ──
+  // Live GPS
   document.getElementById('rsRoad').value     = document.getElementById('manualRoad').value;
   document.getElementById('rsTown').value     = document.getElementById('manualTown').value;
   document.getElementById('rsProvince').value = document.getElementById('manualProvince').value;
 
-  // ── REAL CURRENT NOW DATE (TODAY) ──
+  // Date = today
   document.getElementById('rsDate').value = formatDateDMY(now);
 
-  // ── REAL CURRENT NOW TIME as bulk start ──
+  // ── End time = CURRENT TIME ──
   const ch = now.getHours().toString().padStart(2,'0');
   const cm = now.getMinutes().toString().padStart(2,'0');
-  document.getElementById('rsBulkStart').value = ch + ':' + cm;
+  document.getElementById('rsBulkEnd').value   = ch + ':' + cm;
+  document.getElementById('rsBulkStart').value = '09:00'; // sensible default, user can change
 
-  // ── CURRENT DEVICE ──
   document.getElementById('rsDevice').value = currentDevice;
-
-  // Show auto-fill badge
   document.getElementById('autofillBadge').style.display = 'inline-flex';
 
   document.getElementById('rsBulkTimeRow').style.display = 'block';
@@ -1062,28 +1227,15 @@ async function applyRestamp() {
     quality: parseInt(document.getElementById('rsQuality').value) / 100
   };
 
-  // ── Bulk: generate RANDOM times starting from start time ──
+  // ── Generate random times within [startTime, endTime] ──
   let timeSlots = [];
-  if (isBulkRestamp && restampIds.length > 1) {
-    const startStr  = document.getElementById('rsBulkStart').value || '09:00';
-    const [sh, sm]  = startStr.split(':').map(Number);
-    const startMins = sh * 60 + sm;
-    
-    // Generate random times: start time + random offset (0 to 480 mins = 8 hours)
-    for (let i = 0; i < restampIds.length; i++) {
-      const randomOffset = Math.floor(Math.random() * 480); // 0-480 mins (0-8 hours)
-      let mins = startMins + randomOffset;
-      
-      if (mins >= 1440) mins -= 1440; // Wrap to next day if needed
-      
-      const h    = Math.floor(mins / 60) % 24;
-      const m    = mins % 60;
-      const ampm = h >= 12 ? 'PM' : 'AM';
-      const dh   = h > 12 ? h - 12 : h === 0 ? 12 : h;
-      timeSlots.push(dh.toString().padStart(2,'0') + ':' + m.toString().padStart(2,'0') + ' ' + ampm);
-    }
+  if (isBulkRestamp && restampIds.length > 0) {
+    const startStr = document.getElementById('rsBulkStart').value || '09:00';
+    const endStr   = document.getElementById('rsBulkEnd').value   || currentHM();
+    const startM   = hmToMins(startStr);
+    const endM     = hmToMins(endStr);
+    timeSlots      = randomTimeSlots(startM, endM, restampIds.length);
   } else {
-    // Single — use auto-filled / edited time
     const t = document.getElementById('rsTime').value;
     timeSlots = restampIds.map(() => t);
   }
@@ -1096,7 +1248,7 @@ async function applyRestamp() {
     const id    = restampIds[i];
     const photo = albumPhotos.find(p => p.id === id);
     if (!photo) continue;
-    const opts = { ...baseOpts, time: timeSlots[i] };
+    const opts  = { ...baseOpts, time: timeSlots[i] };
     try {
       await restampAndUpload(photo, opts);
       done++;
@@ -1178,6 +1330,214 @@ function loadImage(src) {
     };
     img.src = src;
   });
+}
+
+// ─── DIRECT UPLOAD OVERLAY ────────────────────────────────
+function openDirectUpload() {
+  const now = new Date();
+  // Pre-fill from current GPS / settings
+  document.getElementById('duRoad').value     = document.getElementById('manualRoad').value;
+  document.getElementById('duTown').value     = document.getElementById('manualTown').value;
+  document.getElementById('duProvince').value = document.getElementById('manualProvince').value;
+  document.getElementById('duDate').value     = formatDateDMY(now);
+  document.getElementById('duDevice').value   = currentDevice;
+  // Time window: 09:00 → current time
+  const ch = now.getHours().toString().padStart(2,'0');
+  const cm = now.getMinutes().toString().padStart(2,'0');
+  document.getElementById('duTimeEnd').value = ch + ':' + cm;
+
+  document.getElementById('directUploadOverlay').classList.add('open');
+}
+
+function closeDirectUpload() {
+  document.getElementById('directUploadOverlay').classList.remove('open');
+}
+
+function setDuType(el, type) {
+  document.querySelectorAll('#directUploadOverlay .photo-type-opt').forEach(d => d.classList.remove('sel'));
+  el.classList.add('sel');
+  duType = type;
+}
+
+// Drag & drop
+function duDragOver(e) {
+  e.preventDefault();
+  document.getElementById('duDropzone').classList.add('drag-over');
+}
+function duDragLeave(e) {
+  document.getElementById('duDropzone').classList.remove('drag-over');
+}
+function duDrop(e) {
+  e.preventDefault();
+  document.getElementById('duDropzone').classList.remove('drag-over');
+  const files = e.dataTransfer.files;
+  if (files.length) addDuFiles(files);
+}
+
+function duFilesChosen(e) {
+  if (e.target.files.length) addDuFiles(e.target.files);
+  e.target.value = '';
+}
+
+function addDuFiles(files) {
+  for (const f of files) {
+    if (!f.type.startsWith('image/')) continue;
+    duFiles.push({file: f, status: 'pending'});
+  }
+  renderDuQueue();
+  document.getElementById('duUploadBtn').disabled = duFiles.length === 0;
+}
+
+function removeDuFile(idx) {
+  duFiles.splice(idx, 1);
+  renderDuQueue();
+  document.getElementById('duUploadBtn').disabled = duFiles.length === 0;
+}
+
+function renderDuQueue() {
+  const container = document.getElementById('duQueue');
+  container.innerHTML = '';
+  duFiles.forEach((item, idx) => {
+    const el = document.createElement('div');
+    el.className = 'du-item';
+    const url = URL.createObjectURL(item.file);
+    const statusClass = item.status;
+    const statusText  = {pending:'Pending',uploading:'Uploading…',done:'Done ✓',error:'Error ✗'}[item.status] || '';
+    el.innerHTML = `
+      <img class="du-item-thumb" src="${url}">
+      <div class="du-item-info">
+        <div class="du-item-name">${item.file.name}</div>
+        <div class="du-item-size">${(item.file.size/1024).toFixed(0)} KB</div>
+      </div>
+      <div class="du-item-status ${statusClass}">${statusText}</div>
+      <button class="du-item-remove" onclick="removeDuFile(${idx})">✕</button>
+    `;
+    container.appendChild(el);
+  });
+}
+
+async function duStartUpload() {
+  if (!duFiles.length) return;
+  if (!serverOnline) { showStatus('⚠️ Server offline', 'error'); return; }
+
+  const startStr = document.getElementById('duTimeStart').value || '09:00';
+  const endStr   = document.getElementById('duTimeEnd').value   || currentHM();
+  const startM   = hmToMins(startStr);
+  const endM     = hmToMins(endStr);
+  const times    = randomTimeSlots(startM, endM, duFiles.length);
+
+  const road   = document.getElementById('duRoad').value     || 'Unknown Road';
+  const town   = document.getElementById('duTown').value;
+  const prov   = document.getElementById('duProvince').value;
+  const date   = document.getElementById('duDate').value;
+  const device = document.getElementById('duDevice').value   || currentDevice;
+  const quality= parseInt(document.getElementById('duQuality').value) / 100;
+  const color  = themeColors[document.getElementById('duTheme').value] || '#00d97e';
+  const location = [road, town, prov].filter(Boolean).join(', ');
+
+  const btn = document.getElementById('duUploadBtn');
+  btn.disabled = true;
+
+  const progressBar  = document.getElementById('duProgressBar');
+  const progressFill = document.getElementById('duProgressFill');
+  progressBar.style.display = 'block';
+
+  showStatus('⏳ Uploading ' + duFiles.length + ' photo(s)…', 'info', 120000);
+
+  let done = 0;
+  for (let i = 0; i < duFiles.length; i++) {
+    duFiles[i].status = 'uploading';
+    renderDuQueue();
+
+    try {
+      // Load image and draw stamp overlay
+      const img = await new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload = ev => {
+          const im = new Image();
+          im.onload  = () => res(im);
+          im.onerror = rej;
+          im.src = ev.target.result;
+        };
+        r.onerror = rej;
+        r.readAsDataURL(duFiles[i].file);
+      });
+
+      const tw = img.naturalWidth;
+      const th = img.naturalHeight;
+      canvas.width = tw; canvas.height = th;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, tw, th);
+
+      // Temporarily override manualRoad/Town/Province/Time for overlay draw
+      const savedRoad = document.getElementById('manualRoad').value;
+      const savedTown = document.getElementById('manualTown').value;
+      const savedProv = document.getElementById('manualProvince').value;
+
+      drawOverlay(ctx, tw, th, {
+        color:  color,
+        time:   times[i],
+        date:   date,
+        road:   road,
+        city:   [town, prov].filter(Boolean).join(', '),
+        coords: gpsCoords,
+        device: device
+      });
+
+      const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', quality));
+
+      // Download stamped copy
+      const url = URL.createObjectURL(blob);
+      const a   = document.createElement('a');
+      a.href = url; a.download = 'RoadCam_DU_' + Date.now() + '.jpg'; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 3000);
+
+      // Upload to server
+      const now  = new Date();
+      const fd   = new FormData();
+      const fname = 'du_' + Date.now() + '.jpg';
+      fd.append('photo',     new File([blob], fname, {type:'image/jpeg'}), fname);
+      fd.append('type',      duType);
+      fd.append('date',      now.toISOString().split('T')[0]);
+      fd.append('time',      times[i]);
+      fd.append('timestamp', now.toLocaleString());
+      fd.append('location',  location);
+      fd.append('device',    device);
+
+      const r = await fetch(SERVER + '/api/upload', {method:'POST', body:fd});
+      const d = await r.json();
+      if (d.success) { duFiles[i].status = 'done'; done++; }
+      else            { duFiles[i].status = 'error'; }
+
+    } catch(e) {
+      duFiles[i].status = 'error';
+      console.error('DU upload error', e);
+    }
+
+    progressFill.style.width = ((i+1)/duFiles.length*100) + '%';
+    renderDuQueue();
+    await new Promise(r => setTimeout(r, 400));
+  }
+
+  showStatus('✅ Uploaded ' + done + '/' + duFiles.length + ' photos!');
+  btn.disabled = false;
+
+  // Auto-clear done items after 3s
+  setTimeout(() => {
+    duFiles = duFiles.filter(f => f.status !== 'done');
+    renderDuQueue();
+    progressBar.style.display = 'none';
+    progressFill.style.width  = '0%';
+    document.getElementById('duUploadBtn').disabled = duFiles.length === 0;
+  }, 3000);
+}
+
+function duClear() {
+  duFiles = [];
+  renderDuQueue();
+  document.getElementById('duUploadBtn').disabled = true;
+  document.getElementById('duProgressBar').style.display = 'none';
+  document.getElementById('duProgressFill').style.width  = '0%';
 }
 
 initApp();
