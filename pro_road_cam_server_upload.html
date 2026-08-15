@@ -3,9 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Pro Road Cam v8.4</title>
+<title>Pro Road Cam v8.5</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-<!-- optional: enables single-ZIP bulk download on desktop -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Plus Jakarta Sans',system-ui,sans-serif}
@@ -34,7 +33,6 @@ body{background:var(--bg);color:#fff;height:100vh;display:flex;flex-direction:co
 .gps-status.searching{color:#fbbf24;animation:blink 1s infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
 
-/* ── AUTO-RELOAD COUNTDOWN BADGE ── */
 .reload-badge{position:absolute;top:52px;right:16px;background:rgba(0,0,0,0.55);backdrop-filter:blur(12px);border:1px solid rgba(0,217,126,0.25);border-radius:8px;padding:4px 10px;font-size:9px;font-weight:700;color:rgba(255,255,255,0.5);z-index:11;display:none;cursor:pointer}
 .reload-badge.visible{display:block}
 .reload-badge span{color:var(--g)}
@@ -81,11 +79,9 @@ select.sfield option{background:#030a06}
 .bulk-time-controls input{flex:1}
 .apply-btn{width:100%;margin-top:16px;padding:13px;background:var(--g);color:#000;border:none;border-radius:12px;font-size:12px;font-weight:800;cursor:pointer;text-transform:uppercase;letter-spacing:1px}
 
-/* datetime-local / time / date field color fix */
 input[type="time"].sfield,
 input[type="date"].sfield{color-scheme:dark;color:#fff}
 
-/* Manual time lock toggle */
 .dt-lock-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
 .dt-lock-row label{font-size:10px;color:rgba(255,255,255,0.55);cursor:pointer;flex:1}
 .dt-toggle{position:relative;width:32px;height:18px;flex-shrink:0}
@@ -151,13 +147,46 @@ input[type="date"].sfield{color-scheme:dark;color:#fff}
 .db-btn:hover{background:rgba(255,255,255,0.14)}
 .db-btn.danger{background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.3);color:#ef4444}
 
-/* RE-STAMP SHEET */
+/* ═══════════════════════════════════════════════
+   RE-STAMP SHEET — REDESIGNED v8.5
+   ─────────────────────────────────────────────
+   Now matches the Direct-Upload sheet in layout.
+   Single path: fill details → choose action.
+   ═══════════════════════════════════════════════ */
 .restamp-sheet{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:300;display:none;align-items:flex-end;justify-content:center}
 .restamp-sheet.open{display:flex}
-.restamp-inner{background:#030a06;border:1px solid rgba(0,217,126,0.3);border-radius:24px 24px 0 0;width:100%;max-width:600px;padding:20px;max-height:80vh;overflow-y:auto}
+.restamp-inner{background:#030a06;border:1px solid rgba(0,217,126,0.3);border-radius:24px 24px 0 0;width:100%;max-width:600px;padding:20px;max-height:88vh;overflow-y:auto;display:flex;flex-direction:column;gap:0}
 .restamp-preview{width:100%;height:140px;border-radius:10px;object-fit:cover;margin-bottom:16px;border:1px solid rgba(255,255,255,0.1)}
 .restamp-multi-preview{display:flex;gap:6px;overflow-x:auto;margin-bottom:16px;padding-bottom:4px}
 .restamp-multi-preview img{width:70px;height:70px;border-radius:8px;object-fit:cover;flex-shrink:0;border:1px solid rgba(255,255,255,0.1)}
+
+/* Step indicator */
+.rs-steps{display:flex;gap:6px;margin-bottom:16px}
+.rs-step{flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,0.1);transition:background 0.3s}
+.rs-step.done{background:var(--g)}
+.rs-step.active{background:rgba(0,217,126,0.5)}
+
+/* Section divider inside sheet */
+.rs-section{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:14px;margin-top:12px}
+.rs-section-title{font-size:9px;font-weight:800;color:var(--g);letter-spacing:1px;text-transform:uppercase;margin-bottom:12px}
+
+/* Action row at bottom of restamp sheet */
+.rs-action-row{display:grid;gap:8px;margin-top:16px}
+.rs-action-row.dual{grid-template-columns:1fr 1fr}
+.rs-action-row.triple{grid-template-columns:1fr 1fr 1fr}
+.rs-act-btn{padding:13px 10px;border-radius:12px;border:none;font-size:11px;font-weight:800;cursor:pointer;text-transform:uppercase;letter-spacing:0.5px;transition:all 0.15s;display:flex;align-items:center;justify-content:center;gap:6px}
+.rs-act-btn:active{transform:scale(0.97)}
+.rs-act-save{background:#16a34a;color:#fff}
+.rs-act-share{background:#6366f1;color:#fff}
+.rs-act-server{background:var(--g);color:#000}
+.rs-act-all{background:var(--g);color:#000;grid-column:1/-1}
+.rs-act-cancel{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.6);grid-column:1/-1;padding:11px}
+
+/* Progress row inside restamp */
+.rs-progress-wrap{display:none;margin-top:12px}
+.rs-progress-label{font-size:10px;color:rgba(255,255,255,0.5);margin-bottom:6px;text-align:center}
+.rs-progress-bar{height:5px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden}
+.rs-progress-fill{height:100%;background:var(--g);border-radius:3px;width:0%;transition:width 0.3s}
 
 /* AUTO-FILL BADGE */
 .autofill-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(0,217,126,0.12);border:1px solid rgba(0,217,126,0.3);color:var(--g);padding:3px 8px;border-radius:6px;font-size:9px;font-weight:700;letter-spacing:0.5px;margin-bottom:10px}
@@ -169,7 +198,7 @@ input[type="date"].sfield{color-scheme:dark;color:#fff}
 .upload-status.error{background:rgba(239,68,68,0.95);color:#fff;box-shadow:0 4px 20px rgba(239,68,68,0.3)}
 .upload-status.info{background:rgba(59,130,246,0.95);color:#fff}
 
-/* ── DIRECT UPLOAD OVERLAY ─────────────────────────── */
+/* DIRECT UPLOAD OVERLAY */
 .direct-upload-overlay{position:fixed;inset:0;background:#030a06;z-index:200;display:none;flex-direction:column}
 .direct-upload-overlay.open{display:flex}
 .du-header{width:100%;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.06)}
@@ -200,7 +229,7 @@ input[type="date"].sfield{color-scheme:dark;color:#fff}
 .du-upload-btn:disabled{opacity:0.4;cursor:not-allowed}
 .du-clear-btn{padding:14px 20px;background:rgba(255,255,255,0.07);color:#fff;border:1px solid rgba(255,255,255,0.1);border-radius:12px;font-size:12px;font-weight:700;cursor:pointer}
 
-/* ── SAVE / SHARE SHEET (restores user-gesture for iOS) ── */
+/* SAVE / SHARE SHEET */
 .save-sheet{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:400;display:none;align-items:flex-end;justify-content:center}
 .save-sheet.open{display:flex}
 .save-inner{background:#030a06;border:1px solid rgba(0,217,126,0.3);border-radius:24px 24px 0 0;width:100%;max-width:600px;padding:20px 20px 28px}
@@ -230,7 +259,6 @@ input[type="date"].sfield{color-scheme:dark;color:#fff}
     <span class="gps-status searching" id="gpsStatus">Searching</span>
   </div>
 
-  <!-- AUTO-RELOAD COUNTDOWN BADGE -->
   <div class="reload-badge" id="reloadBadge" onclick="location.reload()" title="Click to reload now">
     Auto-reload in <span id="reloadCountdown">--</span>
   </div>
@@ -286,8 +314,6 @@ input[type="date"].sfield{color-scheme:dark;color:#fff}
       <input type="text" id="manualTown" class="sfield" placeholder="Town / City">
       <input type="text" id="manualProvince" class="sfield" placeholder="Province">
     </div>
-
-    <!-- ── DATE / TIME EDITING ── -->
     <span class="field-label">Time</span>
     <div class="dt-lock-row">
       <label for="dtAutoTime">🕐 Auto-sync with clock</label>
@@ -297,7 +323,6 @@ input[type="date"].sfield{color-scheme:dark;color:#fff}
       </label>
     </div>
     <input type="time" id="manualTime" class="sfield" placeholder="HH:MM">
-
     <span class="field-label">Date</span>
     <div class="dt-lock-row">
       <label for="dtAutoDate">📅 Auto-sync with today</label>
@@ -307,7 +332,6 @@ input[type="date"].sfield{color-scheme:dark;color:#fff}
       </label>
     </div>
     <input type="date" id="manualDate" class="sfield">
-
     <span class="field-label">Overlay Theme Color</span>
     <select id="themeSelect" class="sfield">
       <option value="green">Green (Default)</option>
@@ -325,8 +349,6 @@ input[type="date"].sfield{color-scheme:dark;color:#fff}
     <div class="bulk-time-controls">
       <input type="time" id="bulkStartTime" class="sfield" value="09:00">
     </div>
-
-    <!-- ── AUTO-RELOAD ── -->
     <span class="field-label">Auto-Reload Interval</span>
     <select id="autoReloadSelect" class="sfield" onchange="setAutoReload()">
       <option value="0">Off</option>
@@ -336,7 +358,6 @@ input[type="date"].sfield{color-scheme:dark;color:#fff}
       <option value="60">Every 60 minutes</option>
     </select>
     <div style="font-size:9px;color:rgba(255,255,255,0.35);margin-top:4px">Page refreshes automatically to keep data current</div>
-
     <button class="apply-btn" onclick="applySettings()">Apply Settings</button>
   </div>
 </div>
@@ -423,7 +444,10 @@ input[type="date"].sfield{color-scheme:dark;color:#fff}
   </div>
 </div>
 
-<!-- RE-STAMP SHEET -->
+<!-- ═══════════════════════════════════════════════════════
+     RE-STAMP SHEET — v8.5  (unified single / bulk)
+     Flow: fill details → pick action (Save / Share / Server)
+     ═══════════════════════════════════════════════════════ -->
 <div class="restamp-sheet" id="restampSheet">
   <div class="restamp-inner">
     <div class="sheet-handle"></div>
@@ -432,69 +456,120 @@ input[type="date"].sfield{color-scheme:dark;color:#fff}
       <button class="close-btn" onclick="closeRestamp()">✕</button>
     </div>
 
+    <!-- step dots -->
+    <div class="rs-steps">
+      <div class="rs-step done" id="rsStep1"></div>
+      <div class="rs-step active" id="rsStep2"></div>
+      <div class="rs-step" id="rsStep3"></div>
+    </div>
+
     <div class="autofill-badge" id="autofillBadge">
       <span>⊙</span> Live GPS + Current Time Auto-filled
     </div>
 
+    <!-- previews -->
     <div id="restampPreviews"></div>
 
-    <span class="field-label">Photo Type</span>
-    <div class="photo-type-row">
-      <div class="photo-type-opt sel" onclick="setRestampType(this,'poster')">📸 Poster Photo</div>
-      <div class="photo-type-opt" onclick="setRestampType(this,'self')">🤳 Self Photo</div>
-    </div>
-    <span class="field-label">Road Name</span>
-    <input type="text" id="rsRoad" class="sfield" placeholder="Road Name">
-    <span class="field-label">Town / City &amp; Province</span>
-    <div class="row2">
-      <input type="text" id="rsTown" class="sfield" placeholder="Town / City">
-      <input type="text" id="rsProvince" class="sfield" placeholder="Province">
-    </div>
+    <!-- ── DETAILS SECTION ── -->
+    <div class="rs-section">
+      <div class="rs-section-title">📍 Details</div>
 
-    <div id="rsTimeRow">
-      <span class="field-label">Time</span>
-      <input type="time" id="rsTime" class="sfield" placeholder="e.g. 09:30">
-    </div>
+      <span class="field-label" style="margin-top:0">Photo Type</span>
+      <div class="photo-type-row">
+        <div class="photo-type-opt sel" onclick="setRestampType(this,'poster')">📸 Poster Photo</div>
+        <div class="photo-type-opt" onclick="setRestampType(this,'self')">🤳 Self Photo</div>
+      </div>
 
-    <div id="rsBulkTimeRow" style="display:none">
-      <span class="field-label">Bulk Time Window</span>
+      <span class="field-label">Road Name</span>
+      <input type="text" id="rsRoad" class="sfield" placeholder="Road Name">
+
+      <span class="field-label">Town / City &amp; Province</span>
       <div class="row2">
-        <div>
-          <span class="field-label" style="margin-top:0">Start Time</span>
-          <input type="time" id="rsBulkStart" class="sfield" value="09:00">
-        </div>
-        <div>
-          <span class="field-label" style="margin-top:0">End Time</span>
-          <input type="time" id="rsBulkEnd" class="sfield">
-        </div>
-      </div>
-      <div style="font-size:9px;color:rgba(255,255,255,0.4);margin-top:6px">
-        ⊙ End time auto-set to current time. Random times generated within window.
+        <input type="text" id="rsTown" class="sfield" placeholder="Town / City">
+        <input type="text" id="rsProvince" class="sfield" placeholder="Province">
       </div>
     </div>
 
-    <span class="field-label">Date</span>
-    <input type="date" id="rsDate" class="sfield">
-    <span class="field-label">Device</span>
-    <input type="text" id="rsDevice" class="sfield" placeholder="Device name">
-    <span class="field-label">Overlay Theme Color</span>
-    <select id="rsTheme" class="sfield">
-      <option value="green">Green</option>
-      <option value="blue">Blue</option>
-      <option value="amber">Amber</option>
-      <option value="red">Red</option>
-      <option value="white">White</option>
-    </select>
-    <span class="field-label">JPEG Quality</span>
-    <div style="display:flex;align-items:center;gap:10px">
-      <input type="range" id="rsQuality" min="70" max="100" value="97" style="flex:1;accent-color:var(--g)">
-      <span id="rsQualityLabel" style="font-size:11px;color:var(--g);font-weight:700;min-width:32px">97%</span>
+    <!-- ── TIME SECTION ── -->
+    <div class="rs-section">
+      <div class="rs-section-title">🕐 Time</div>
+
+      <!-- Single photo time -->
+      <div id="rsTimeRow">
+        <input type="time" id="rsTime" class="sfield" placeholder="e.g. 09:30">
+      </div>
+
+      <!-- Bulk time window -->
+      <div id="rsBulkTimeRow" style="display:none">
+        <div class="row2">
+          <div>
+            <span class="field-label" style="margin-top:0">Start Time</span>
+            <input type="time" id="rsBulkStart" class="sfield" value="09:00">
+          </div>
+          <div>
+            <span class="field-label" style="margin-top:0">End Time</span>
+            <input type="time" id="rsBulkEnd" class="sfield">
+          </div>
+        </div>
+        <div style="font-size:9px;color:rgba(255,255,255,0.4);margin-top:6px">
+          ⊙ Random times generated within window for each photo
+        </div>
+      </div>
     </div>
-    <button class="apply-btn" id="restampApplyBtn" onclick="applyRestamp()">Apply Re-stamp</button>
+
+    <!-- ── DATE / DEVICE / THEME ── -->
+    <div class="rs-section">
+      <div class="rs-section-title">📅 Date &amp; Device</div>
+
+      <div class="row2">
+        <div style="flex:1">
+          <span class="field-label" style="margin-top:0">Date</span>
+          <input type="date" id="rsDate" class="sfield">
+        </div>
+        <div style="flex:1">
+          <span class="field-label" style="margin-top:0">Device</span>
+          <input type="text" id="rsDevice" class="sfield" placeholder="Device name">
+        </div>
+      </div>
+
+      <div class="row2" style="margin-top:8px">
+        <div style="flex:1">
+          <span class="field-label" style="margin-top:0">Theme Color</span>
+          <select id="rsTheme" class="sfield">
+            <option value="green">Green</option>
+            <option value="blue">Blue</option>
+            <option value="amber">Amber</option>
+            <option value="red">Red</option>
+            <option value="white">White</option>
+          </select>
+        </div>
+        <div style="flex:1">
+          <span class="field-label" style="margin-top:0">JPEG Quality</span>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:4px">
+            <input type="range" id="rsQuality" min="70" max="100" value="97" style="flex:1;accent-color:var(--g)">
+            <span id="rsQualityLabel" style="font-size:11px;color:var(--g);font-weight:700;min-width:30px">97%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- progress bar (shown during processing) -->
+    <div class="rs-progress-wrap" id="rsProgressWrap">
+      <div class="rs-progress-label" id="rsProgressLabel">Processing…</div>
+      <div class="rs-progress-bar"><div class="rs-progress-fill" id="rsProgressFill"></div></div>
+    </div>
+
+    <!-- ── ACTION ROW — fill in after details ── -->
+    <div class="rs-action-row triple" id="rsActionRow">
+      <button class="rs-act-btn rs-act-save"   onclick="applyRestamp('save')">⬇ Save</button>
+      <button class="rs-act-btn rs-act-share"  onclick="applyRestamp('share')">↗ Share</button>
+      <button class="rs-act-btn rs-act-server" onclick="applyRestamp('server')">⬆ Server</button>
+      <button class="rs-act-btn rs-act-cancel" onclick="closeRestamp()">Cancel</button>
+    </div>
   </div>
 </div>
 
-<!-- ── DIRECT UPLOAD OVERLAY ──────────────────────────────── -->
+<!-- DIRECT UPLOAD OVERLAY -->
 <div class="direct-upload-overlay" id="directUploadOverlay">
   <div class="du-header">
     <span class="sheet-title">Upload Photos to Server</span>
@@ -610,19 +685,17 @@ let isBulkRestamp    = false;
 let duFiles          = [];
 let duType           = 'poster';
 
-// ── Auto-reload state ─────────────────────────────────────
 let autoReloadMins   = 0;
 let reloadSecsLeft   = 0;
 let reloadTimerID    = null;
 
-// ── Date/time manual-lock flags ───────────────────────────
 let autoSyncTime     = true;
 let autoSyncDate     = true;
 
 const themeColors = {green:'#00d97e',blue:'#3b82f6',amber:'#f59e0b',red:'#ef4444',white:'#ffffff'};
 
 // ═══════════════════════════════════════════════════════════
-//  PLATFORM DETECTION — iOS · Android · Desktop
+//  PLATFORM DETECTION
 // ═══════════════════════════════════════════════════════════
 const UA         = navigator.userAgent || '';
 const IS_IOS     = /iPad|iPhone|iPod/.test(UA) ||
@@ -630,7 +703,6 @@ const IS_IOS     = /iPad|iPhone|iPod/.test(UA) ||
 const IS_ANDROID = /Android/i.test(UA);
 const IS_MOBILE  = IS_IOS || IS_ANDROID;
 
-// Real file-sharing support (iOS 15+, Android Chrome, Edge)
 const CAN_SHARE_FILES = (() => {
   try {
     const probe = new File([new Blob(['x'], {type:'image/jpeg'})], 'p.jpg', {type:'image/jpeg'});
@@ -638,8 +710,8 @@ const CAN_SHARE_FILES = (() => {
   } catch(e) { return false; }
 })();
 
-const SHARE_CHUNK = IS_IOS ? 10 : 20;   // iOS chokes past ~10 files
-let pendingSave   = null;               // {files:[File], mode}
+const SHARE_CHUNK = IS_IOS ? 10 : 20;
+let pendingSave   = null;
 
 // ─── HELPERS ──────────────────────────────────────────────
 function formatTime24(date) {
@@ -656,10 +728,9 @@ function formatTime12(date) {
 }
 function formatDateISO(date) {
   date = date || new Date();
-  const y = date.getFullYear();
-  const m = (date.getMonth()+1).toString().padStart(2,'0');
-  const d = date.getDate().toString().padStart(2,'0');
-  return y + '-' + m + '-' + d;
+  return date.getFullYear() + '-' +
+         (date.getMonth()+1).toString().padStart(2,'0') + '-' +
+         date.getDate().toString().padStart(2,'0');
 }
 function formatDateDMY(date) {
   date = date || new Date();
@@ -727,7 +798,7 @@ async function checkServer() {
 
 // ─── CLOCK ────────────────────────────────────────────────
 function updateClock() {
-  const now = new Date();
+  const now     = new Date();
   const timeStr = now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true});
   const dateStr = now.toLocaleDateString('en-GB') + ' • ' + now.toLocaleDateString('en-GB',{weekday:'long'});
   document.getElementById('dispTime').textContent = timeStr;
@@ -736,7 +807,6 @@ function updateClock() {
   if (autoSyncDate) document.getElementById('manualDate').value = formatDateISO(now);
 }
 
-// ─── DATETIME LOCK TOGGLES ────────────────────────────────
 function onAutoTimeToggle() {
   autoSyncTime = document.getElementById('dtAutoTime').checked;
   const field  = document.getElementById('manualTime');
@@ -1024,7 +1094,6 @@ function takeSnapshot(autoSave = false, originalFile = null) {
       currentBlob = stampedBlob;
       resultImg.src = URL.createObjectURL(stampedBlob);
       if (autoSave) {
-        // swap origBlob → stampedBlob here if you want the server to store the stamped copy
         uploadToServer(origBlob, originalFile);
       } else {
         previewOverlay.style.display = 'flex';
@@ -1087,7 +1156,6 @@ function makeFileName(photo, i) {
          .replace(/[^\w.\-]/g, '_');
 }
 
-// Must run inside a real user gesture
 async function shareFiles(files, title) {
   if (!CAN_SHARE_FILES) return false;
   for (let i = 0; i < files.length; i += SHARE_CHUNK) {
@@ -1096,7 +1164,7 @@ async function shareFiles(files, title) {
     try {
       await navigator.share({files: chunk, title: title || 'Road Cam Photos'});
     } catch(e) {
-      if (e.name === 'AbortError') return true;   // user cancelled, don't double-save
+      if (e.name === 'AbortError') return true;
       console.warn('share failed', e);
       return false;
     }
@@ -1105,7 +1173,6 @@ async function shareFiles(files, title) {
 }
 
 async function downloadFiles(files) {
-  // Desktop: one ZIP beats N download prompts
   if (!IS_MOBILE && files.length > 2 && window.JSZip) {
     try {
       const zip = new JSZip();
@@ -1326,6 +1393,8 @@ function selectAll() {
 }
 
 // ─── BULK SAVE / SHARE FROM ALBUM ─────────────────────────
+// NEW FLOW: select → fill details → then save/share
+// This is triggered by the toolbar Save/Share buttons
 async function fetchSelectedFiles() {
   const sel   = filteredPhotos.filter(p => selectedIds.has(p.id));
   const files = [];
@@ -1340,20 +1409,67 @@ async function fetchSelectedFiles() {
   return files;
 }
 
-async function bulkDownload() { await bulkSave('auto'); }
-async function bulkShare()    { await bulkSave('share'); }
+// Direct bulk save (no restamp) — opens the details sheet to let user update details first
+async function bulkDownload() { bulkSaveWithDetails('save'); }
+async function bulkShare()    { bulkSaveWithDetails('share'); }
 
-async function bulkSave(mode) {
+// Opens the restamp sheet prefilled but with a "save/share" action mode
+// so the user can update details if they want before downloading
+function bulkSaveWithDetails(mode) {
   if (selectedIds.size === 0) { showStatus('No photos selected', 'error'); return; }
-  showStatus('⏳ Preparing ' + selectedIds.size + ' photo(s)…', 'info', 60000);
-  const files = await fetchSelectedFiles();
-  if (!files.length) { showStatus('❌ Could not load photos', 'error'); return; }
-  if (files.length < selectedIds.size)
-    showStatus('⚠️ ' + files.length + '/' + selectedIds.size + ' loaded', 'info');
-  presentSave(files, mode);
+  // Re-use the restamp sheet configured for download-only mode (no server update)
+  isBulkRestamp = (selectedIds.size > 1);
+  restampIds    = [...selectedIds];
+  restampType   = 'poster';
+
+  const previews = filteredPhotos.filter(p => selectedIds.has(p.id)).slice(0, 6);
+  document.getElementById('restampPreviews').innerHTML =
+    '<div class="restamp-multi-preview">' +
+    previews.map(p => `<img src="${SERVER}${p.filepath}">`).join('') +
+    '</div>';
+
+  const now = new Date();
+  document.getElementById('rsRoad').value      = document.getElementById('manualRoad').value;
+  document.getElementById('rsTown').value      = document.getElementById('manualTown').value;
+  document.getElementById('rsProvince').value  = document.getElementById('manualProvince').value;
+  document.getElementById('rsDate').value      = formatDateISO(now);
+  document.getElementById('rsBulkEnd').value   = formatTime24(now);
+  document.getElementById('rsBulkStart').value = '09:00';
+  document.getElementById('rsDevice').value    = currentDevice;
+  document.getElementById('autofillBadge').style.display = 'inline-flex';
+
+  if (selectedIds.size > 1) {
+    document.getElementById('rsBulkTimeRow').style.display = 'block';
+    document.getElementById('rsTimeRow').style.display     = 'none';
+  } else {
+    document.getElementById('rsBulkTimeRow').style.display = 'none';
+    document.getElementById('rsTimeRow').style.display     = 'block';
+    document.getElementById('rsTime').value = formatTime24(now);
+  }
+
+  document.querySelectorAll('.restamp-sheet .photo-type-opt').forEach(el => el.classList.remove('sel'));
+  document.querySelectorAll('.restamp-sheet .photo-type-opt')[0].classList.add('sel');
+
+  const n = selectedIds.size;
+  document.getElementById('restampTitle').textContent = (n > 1 ? 'Bulk ' : '') + 'Details & ' + (mode === 'share' ? 'Share' : 'Save') + ' (' + n + ' photo' + (n > 1 ? 's' : '') + ')';
+
+  // Store mode so applyRestamp knows what to do after processing
+  document.getElementById('restampSheet').dataset.mode = mode;
+
+  // Adjust action row for save/share-only (no Server button)
+  const actionRow = document.getElementById('rsActionRow');
+  actionRow.className = 'rs-action-row dual';
+  actionRow.innerHTML = `
+    <button class="rs-act-btn rs-act-save"  onclick="applyRestamp('save')">⬇ Save to Device</button>
+    <button class="rs-act-btn rs-act-share" onclick="applyRestamp('share')">↗ Share</button>
+    <button class="rs-act-btn rs-act-cancel" onclick="closeRestamp()">Cancel</button>
+  `;
+
+  document.getElementById('rsProgressWrap').style.display = 'none';
+  document.getElementById('rsProgressFill').style.width   = '0%';
+  document.getElementById('restampSheet').classList.add('open');
 }
 
-// ─── DELETE ───────────────────────────────────────────────
 async function bulkDelete() {
   if (selectedIds.size === 0) { showStatus('No photos selected', 'error'); return; }
   if (!confirm('Delete ' + selectedIds.size + ' photo(s)?')) return;
@@ -1380,13 +1496,13 @@ async function deleteByDate() {
   } catch(e) { showStatus('❌ Delete failed', 'error'); }
 }
 
-// ─── EXPORT ───────────────────────────────────────────────
 function exportDB() { window.location.href = SERVER + '/api/export'; }
 
 // ─── RE-STAMP: SINGLE ─────────────────────────────────────
 function openSingleRestamp(photo) {
   restampIds  = [photo.id];
   restampType = photo.type;
+  isBulkRestamp = false;
 
   const now      = new Date();
   const liveRoad = document.getElementById('manualRoad').value;
@@ -1408,15 +1524,26 @@ function openSingleRestamp(photo) {
   document.querySelectorAll('.restamp-sheet .photo-type-opt')[photo.type === 'self' ? 1 : 0].classList.add('sel');
   document.getElementById('autofillBadge').style.display = 'inline-flex';
 
-  isBulkRestamp = false;
   document.getElementById('rsBulkTimeRow').style.display = 'none';
   document.getElementById('rsTimeRow').style.display     = 'block';
   document.getElementById('restampTitle').textContent    = 'Re-stamp Photo';
-  document.getElementById('restampApplyBtn').textContent = 'Apply Re-stamp';
+
+  // Full action row: save + share + server
+  const actionRow = document.getElementById('rsActionRow');
+  actionRow.className = 'rs-action-row triple';
+  actionRow.innerHTML = `
+    <button class="rs-act-btn rs-act-save"   onclick="applyRestamp('save')">⬇ Save</button>
+    <button class="rs-act-btn rs-act-share"  onclick="applyRestamp('share')">↗ Share</button>
+    <button class="rs-act-btn rs-act-server" onclick="applyRestamp('server')">⬆ Server</button>
+    <button class="rs-act-btn rs-act-cancel" onclick="closeRestamp()">Cancel</button>
+  `;
+
+  document.getElementById('rsProgressWrap').style.display = 'none';
+  document.getElementById('rsProgressFill').style.width   = '0%';
   document.getElementById('restampSheet').classList.add('open');
 }
 
-// ─── RE-STAMP: BULK ───────────────────────────────────────
+// ─── RE-STAMP: BULK (from select bar) ─────────────────────
 function bulkRestamp() {
   if (selectedIds.size === 0) { showStatus('No photos selected', 'error'); return; }
   isBulkRestamp = true;
@@ -1425,7 +1552,9 @@ function bulkRestamp() {
 
   const previews = filteredPhotos.filter(p => selectedIds.has(p.id)).slice(0, 6);
   document.getElementById('restampPreviews').innerHTML =
-    '<div class="restamp-multi-preview">' + previews.map(p => `<img src="${SERVER}${p.filepath}">`).join('') + '</div>';
+    '<div class="restamp-multi-preview">' +
+    previews.map(p => `<img src="${SERVER}${p.filepath}">`).join('') +
+    '</div>';
 
   const now = new Date();
   document.getElementById('rsRoad').value      = document.getElementById('manualRoad').value;
@@ -1443,8 +1572,21 @@ function bulkRestamp() {
   document.querySelectorAll('.restamp-sheet .photo-type-opt').forEach(el => el.classList.remove('sel'));
   document.querySelectorAll('.restamp-sheet .photo-type-opt')[0].classList.add('sel');
 
-  document.getElementById('restampTitle').textContent    = 'Bulk Re-stamp (' + restampIds.length + ' photos)';
-  document.getElementById('restampApplyBtn').textContent = 'Apply Re-stamp';
+  const n = restampIds.length;
+  document.getElementById('restampTitle').textContent = 'Bulk Re-stamp (' + n + ' photos)';
+
+  // Full action row for restamp: save + share + server
+  const actionRow = document.getElementById('rsActionRow');
+  actionRow.className = 'rs-action-row triple';
+  actionRow.innerHTML = `
+    <button class="rs-act-btn rs-act-save"   onclick="applyRestamp('save')">⬇ Save</button>
+    <button class="rs-act-btn rs-act-share"  onclick="applyRestamp('share')">↗ Share</button>
+    <button class="rs-act-btn rs-act-server" onclick="applyRestamp('server')">⬆ Server</button>
+    <button class="rs-act-btn rs-act-cancel" onclick="closeRestamp()">Cancel</button>
+  `;
+
+  document.getElementById('rsProgressWrap').style.display = 'none';
+  document.getElementById('rsProgressFill').style.width   = '0%';
   document.getElementById('restampSheet').classList.add('open');
 }
 
@@ -1453,14 +1595,22 @@ function setRestampType(el, type) {
   el.classList.add('sel');
   restampType = type;
 }
-function closeRestamp() { document.getElementById('restampSheet').classList.remove('open'); }
+function closeRestamp() {
+  document.getElementById('restampSheet').classList.remove('open');
+  document.getElementById('rsProgressWrap').style.display = 'none';
+}
 
-async function applyRestamp() {
+// ─────────────────────────────────────────────────────────
+//  applyRestamp — unified handler for save / share / server
+//  Processes photos one by one, collecting blobs, then
+//  delivers them via the chosen action.
+// ─────────────────────────────────────────────────────────
+async function applyRestamp(action) {
   const baseOpts = {
     road:     document.getElementById('rsRoad').value,
     town:     document.getElementById('rsTown').value,
     province: document.getElementById('rsProvince').value,
-    date:     (() => {
+    date: (() => {
       const v = document.getElementById('rsDate').value;
       if (!v) return formatDateDMY();
       const [y,m,d] = v.split('-');
@@ -1473,8 +1623,9 @@ async function applyRestamp() {
     quality:  parseInt(document.getElementById('rsQuality').value) / 100
   };
 
+  // Build time slots
   let timeSlots = [];
-  if (isBulkRestamp && restampIds.length > 0) {
+  if (isBulkRestamp && restampIds.length > 1) {
     const startStr = document.getElementById('rsBulkStart').value || '09:00';
     const endStr   = document.getElementById('rsBulkEnd').value   || currentHM();
     timeSlots      = randomTimeSlots(hmToMins(startStr), hmToMins(endStr), restampIds.length);
@@ -1490,30 +1641,86 @@ async function applyRestamp() {
     timeSlots = restampIds.map(() => t12);
   }
 
-  closeRestamp();
-  showStatus('⏳ Re-stamping ' + restampIds.length + ' photo(s)…', 'info', 60000);
+  // Show progress
+  const progressWrap  = document.getElementById('rsProgressWrap');
+  const progressFill  = document.getElementById('rsProgressFill');
+  const progressLabel = document.getElementById('rsProgressLabel');
+  const actionRow     = document.getElementById('rsActionRow');
+  progressWrap.style.display = 'block';
+  actionRow.style.opacity    = '0.4';
+  actionRow.style.pointerEvents = 'none';
 
+  const actionLabel = action === 'save' ? 'Preparing' : action === 'share' ? 'Preparing' : 'Uploading';
+  progressLabel.textContent = actionLabel + ' 0 / ' + restampIds.length;
+
+  let processedFiles = [];
   let done = 0;
+  let errors = 0;
+
   for (let i = 0; i < restampIds.length; i++) {
     const photo = albumPhotos.find(p => p.id === restampIds[i]);
-    if (!photo) continue;
-    try { await restampAndUpload(photo, { ...baseOpts, time: timeSlots[i] }); done++; }
-    catch(e) { console.error('Restamp failed for', restampIds[i], e); }
+    if (!photo) { errors++; continue; }
+
+    progressLabel.textContent = actionLabel + ' ' + (i+1) + ' / ' + restampIds.length + '…';
+    progressFill.style.width  = ((i+1) / restampIds.length * 100) + '%';
+
+    try {
+      const opts = { ...baseOpts, time: timeSlots[i] };
+
+      if (action === 'server') {
+        // Upload to server (existing path)
+        await restampAndUpload(photo, opts);
+        done++;
+      } else {
+        // Render stamped blob for local save/share
+        const blob = await restampToBlob(photo, opts);
+        if (blob) {
+          const fname = 'RoadCam_' + baseOpts.isoDate + '_' + timeSlots[i].replace(/[:\s]/g,'-') + '_' + photo.id + '.jpg';
+          processedFiles.push(new File([blob], fname, {type:'image/jpeg'}));
+          done++;
+        } else { errors++; }
+      }
+    } catch(e) {
+      console.error('Restamp failed for', restampIds[i], e);
+      errors++;
+    }
+
+    await new Promise(r => setTimeout(r, 80)); // small yield between photos
   }
 
-  showStatus('✅ Re-stamped ' + done + ' photo(s)!');
-  selectedIds.clear();
-  selectMode    = false;
+  progressFill.style.width = '100%';
+
+  // Deliver result
+  if (action === 'server') {
+    const msg = errors > 0
+      ? '⚠️ ' + done + '/' + restampIds.length + ' uploaded (' + errors + ' failed)'
+      : '✅ Re-stamped & uploaded ' + done + ' photo(s)!';
+    showStatus(msg, errors > 0 ? 'info' : 'success');
+    closeRestamp();
+    selectedIds.clear(); selectMode = false;
+    document.getElementById('selectBar').classList.remove('active');
+    loadAlbum();
+  } else {
+    closeRestamp();
+    if (processedFiles.length === 0) {
+      showStatus('❌ No photos could be processed', 'error');
+      return;
+    }
+    if (errors > 0) showStatus('⚠️ ' + errors + ' photo(s) failed, delivering ' + processedFiles.length, 'info', 4000);
+    // Use presentSave so iOS gets the share-sheet gesture correctly
+    presentSave(processedFiles, action);
+    selectedIds.clear(); selectMode = false;
+    document.getElementById('selectBar').classList.remove('active');
+  }
+
   isBulkRestamp = false;
-  document.getElementById('selectBar').classList.remove('active');
-  loadAlbum();
 }
 
-async function restampAndUpload(photo, opts) {
-  const location = [opts.road, opts.town, opts.province].filter(Boolean).join(', ');
-  const img      = await loadImage(SERVER + photo.filepath);
-  const tw = img.naturalWidth  || img.width;
-  const th = img.naturalHeight || img.height;
+// Render a stamped JPEG blob from a photo record — no server upload
+async function restampToBlob(photo, opts) {
+  const img = await loadImage(SERVER + photo.filepath);
+  const tw  = img.naturalWidth  || img.width;
+  const th  = img.naturalHeight || img.height;
   canvas.width = tw; canvas.height = th;
   const ctx = canvas.getContext('2d');
   ctx.drawImage(img, 0, 0, tw, th);
@@ -1528,25 +1735,28 @@ async function restampAndUpload(photo, opts) {
     device: opts.device
   });
 
-  return new Promise((resolve, reject) => {
-    canvas.toBlob(async blob => {
-      if (!blob) return reject(new Error('Canvas toBlob failed'));
-      const now = new Date();
-      const fd  = new FormData();
-      fd.append('photo',     new File([blob], 'rs_' + Date.now() + '.jpg', {type:'image/jpeg'}));
-      fd.append('type',      opts.type);
-      fd.append('date',      opts.isoDate || now.toISOString().split('T')[0]);
-      fd.append('time',      opts.time || photo.time);
-      fd.append('timestamp', now.toLocaleString());
-      fd.append('location',  location || photo.location);
-      fd.append('device',    opts.device || photo.device);
-      try {
-        const r = await fetch(SERVER + '/api/restamp/' + photo.id, {method:'PUT', body:fd});
-        const d = await r.json();
-        if (d.success) resolve(d); else reject(new Error(d.error || 'Restamp failed'));
-      } catch(e) { reject(e); }
-    }, 'image/jpeg', opts.quality);
-  });
+  return new Promise(res => canvas.toBlob(res, 'image/jpeg', opts.quality));
+}
+
+async function restampAndUpload(photo, opts) {
+  const location = [opts.road, opts.town, opts.province].filter(Boolean).join(', ');
+  const blob     = await restampToBlob(photo, opts);
+  if (!blob) throw new Error('Canvas toBlob failed');
+
+  const now = new Date();
+  const fd  = new FormData();
+  fd.append('photo',     new File([blob], 'rs_' + Date.now() + '.jpg', {type:'image/jpeg'}));
+  fd.append('type',      opts.type);
+  fd.append('date',      opts.isoDate || now.toISOString().split('T')[0]);
+  fd.append('time',      opts.time || photo.time);
+  fd.append('timestamp', now.toLocaleString());
+  fd.append('location',  location || photo.location);
+  fd.append('device',    opts.device || photo.device);
+
+  const r = await fetch(SERVER + '/api/restamp/' + photo.id, {method:'PUT', body:fd});
+  const d = await r.json();
+  if (!d.success) throw new Error(d.error || 'Restamp failed');
+  return d;
 }
 
 function loadImage(src) {
