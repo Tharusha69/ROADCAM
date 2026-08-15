@@ -3,8 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Pro Road Cam v8.3</title>
+<title>Pro Road Cam v8.4</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<!-- optional: enables single-ZIP bulk download on desktop -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Plus Jakarta Sans',system-ui,sans-serif}
 :root{--g:#00d97e;--gd:#00a85a;--bg:#030a06;--glass:rgba(0,0,0,0.55)}
@@ -197,6 +199,13 @@ input[type="date"].sfield{color-scheme:dark;color:#fff}
 .du-upload-btn{flex:1;padding:14px;background:var(--g);color:#000;border:none;border-radius:12px;font-size:12px;font-weight:800;cursor:pointer;text-transform:uppercase;letter-spacing:1px}
 .du-upload-btn:disabled{opacity:0.4;cursor:not-allowed}
 .du-clear-btn{padding:14px 20px;background:rgba(255,255,255,0.07);color:#fff;border:1px solid rgba(255,255,255,0.1);border-radius:12px;font-size:12px;font-weight:700;cursor:pointer}
+
+/* ── SAVE / SHARE SHEET (restores user-gesture for iOS) ── */
+.save-sheet{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:400;display:none;align-items:flex-end;justify-content:center}
+.save-sheet.open{display:flex}
+.save-inner{background:#030a06;border:1px solid rgba(0,217,126,0.3);border-radius:24px 24px 0 0;width:100%;max-width:600px;padding:20px 20px 28px}
+.save-title{font-size:14px;font-weight:800;color:var(--g);text-transform:uppercase;letter-spacing:0.8px;text-align:center}
+.save-sub{font-size:11px;color:rgba(255,255,255,0.5);text-align:center;margin-top:6px;line-height:1.5}
 </style>
 </head>
 <body>
@@ -348,7 +357,7 @@ input[type="date"].sfield{color-scheme:dark;color:#fff}
 
 <canvas id="canvas"></canvas>
 
-<!-- PREVIEW OVERLAY — now has 4 buttons: Retake | Download | Share | Upload -->
+<!-- PREVIEW OVERLAY -->
 <div class="preview-overlay" id="previewOverlay">
   <div class="preview-header">
     <span>Preview</span>
@@ -359,7 +368,7 @@ input[type="date"].sfield{color-scheme:dark;color:#fff}
   </div>
   <div class="preview-actions">
     <button class="p-btn" style="background:#1a1a1a;color:#fff" onclick="closePreview()">↩ Retake</button>
-    <button class="p-btn" style="background:#16a34a;color:#fff" id="downloadBtn">⬇ Download</button>
+    <button class="p-btn" style="background:#16a34a;color:#fff" id="downloadBtn">⬇ Save</button>
     <button class="p-btn" style="background:#6366f1;color:#fff" id="shareBtn">↗ Share</button>
     <button class="p-btn" style="background:#00d97e;color:#000" id="uploadServerBtn">⬆ Server</button>
   </div>
@@ -382,7 +391,8 @@ input[type="date"].sfield{color-scheme:dark;color:#fff}
     <span class="select-info" id="selectInfo">0 selected</span>
     <div class="select-actions">
       <button class="sel-btn" style="background:rgba(255,255,255,0.1);color:#fff" onclick="selectAll()">All</button>
-      <button class="sel-btn" style="background:rgba(22,163,74,0.2);color:#4ade80" onclick="bulkDownload()">⬇ DL</button>
+      <button class="sel-btn" style="background:rgba(22,163,74,0.2);color:#4ade80" onclick="bulkDownload()">⬇ Save</button>
+      <button class="sel-btn" style="background:rgba(99,102,241,0.25);color:#a5b4fc" onclick="bulkShare()">↗ Share</button>
       <button class="sel-btn" style="background:rgba(0,217,126,0.2);color:var(--g)" onclick="bulkRestamp()">Re-stamp</button>
       <button class="sel-btn" style="background:rgba(239,68,68,0.2);color:#ef4444" onclick="bulkDelete()">Delete</button>
     </div>
@@ -548,6 +558,17 @@ input[type="date"].sfield{color-scheme:dark;color:#fff}
   </div>
 </div>
 
+<!-- SAVE / SHARE SHEET -->
+<div class="save-sheet" id="saveSheet">
+  <div class="save-inner">
+    <div class="sheet-handle"></div>
+    <div class="save-title">Ready: <span id="saveCount">0</span> photo(s)</div>
+    <div class="save-sub" id="saveHint">Tap below to add them to your Photos app</div>
+    <button class="apply-btn" id="savePrimaryBtn" onclick="doPendingSave()">⬇ Save to device</button>
+    <button class="du-clear-btn" style="width:100%;margin-top:8px" onclick="cancelPendingSave()">Cancel</button>
+  </div>
+</div>
+
 <!-- STATUS TOAST -->
 <div class="upload-status" id="uploadStatus"></div>
 
@@ -590,7 +611,7 @@ let duFiles          = [];
 let duType           = 'poster';
 
 // ── Auto-reload state ─────────────────────────────────────
-let autoReloadMins   = 0;   // 0 = off
+let autoReloadMins   = 0;
 let reloadSecsLeft   = 0;
 let reloadTimerID    = null;
 
@@ -599,6 +620,26 @@ let autoSyncTime     = true;
 let autoSyncDate     = true;
 
 const themeColors = {green:'#00d97e',blue:'#3b82f6',amber:'#f59e0b',red:'#ef4444',white:'#ffffff'};
+
+// ═══════════════════════════════════════════════════════════
+//  PLATFORM DETECTION — iOS · Android · Desktop
+// ═══════════════════════════════════════════════════════════
+const UA         = navigator.userAgent || '';
+const IS_IOS     = /iPad|iPhone|iPod/.test(UA) ||
+                   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const IS_ANDROID = /Android/i.test(UA);
+const IS_MOBILE  = IS_IOS || IS_ANDROID;
+
+// Real file-sharing support (iOS 15+, Android Chrome, Edge)
+const CAN_SHARE_FILES = (() => {
+  try {
+    const probe = new File([new Blob(['x'], {type:'image/jpeg'})], 'p.jpg', {type:'image/jpeg'});
+    return !!(navigator.share && navigator.canShare && navigator.canShare({files:[probe]}));
+  } catch(e) { return false; }
+})();
+
+const SHARE_CHUNK = IS_IOS ? 10 : 20;   // iOS chokes past ~10 files
+let pendingSave   = null;               // {files:[File], mode}
 
 // ─── HELPERS ──────────────────────────────────────────────
 function formatTime24(date) {
@@ -618,19 +659,16 @@ function formatDateISO(date) {
   const y = date.getFullYear();
   const m = (date.getMonth()+1).toString().padStart(2,'0');
   const d = date.getDate().toString().padStart(2,'0');
-  return y + '-' + m + '-' + d;  // YYYY-MM-DD for <input type="date">
+  return y + '-' + m + '-' + d;
 }
 function formatDateDMY(date) {
   date = date || new Date();
-  return date.toLocaleDateString('en-GB');  // DD/MM/YYYY display
+  return date.toLocaleDateString('en-GB');
 }
-
-// Convert HH:MM string → minutes since midnight
 function hmToMins(hm) {
   const [h, m] = hm.split(':').map(Number);
   return h * 60 + m;
 }
-// Convert minutes since midnight → "HH:MM AM/PM"
 function minsTo12(mins) {
   mins = ((mins % 1440) + 1440) % 1440;
   const h    = Math.floor(mins / 60);
@@ -639,10 +677,7 @@ function minsTo12(mins) {
   const dh   = h > 12 ? h - 12 : h === 0 ? 12 : h;
   return dh.toString().padStart(2,'0') + ':' + m.toString().padStart(2,'0') + ' ' + ampm;
 }
-function currentHM() {
-  const now = new Date();
-  return formatTime24(now);
-}
+function currentHM() { return formatTime24(new Date()); }
 function randomTimeSlots(startMins, endMins, n) {
   let range = endMins - startMins;
   if (range <= 0) range += 1440;
@@ -651,20 +686,16 @@ function randomTimeSlots(startMins, endMins, n) {
     return minsTo12(startMins + offset);
   });
 }
-
-// Read the manualTime field as a 12h display string
 function getManualTimeDisplay() {
-  const val = document.getElementById('manualTime').value; // HH:MM (24h)
+  const val = document.getElementById('manualTime').value;
   if (!val) return formatTime12();
   const [h, m] = val.split(':').map(Number);
   const ampm   = h >= 12 ? 'PM' : 'AM';
   const dh     = h > 12 ? h - 12 : h === 0 ? 12 : h;
   return dh.toString().padStart(2,'0') + ':' + m.toString().padStart(2,'0') + ' ' + ampm;
 }
-
-// Read the manualDate field as a friendly display string
 function getManualDateDisplay() {
-  const val = document.getElementById('manualDate').value; // YYYY-MM-DD
+  const val = document.getElementById('manualDate').value;
   if (!val) return formatDateDMY();
   const [y, m, d] = val.split('-');
   const dt  = new Date(parseInt(y), parseInt(m)-1, parseInt(d));
@@ -697,18 +728,12 @@ async function checkServer() {
 // ─── CLOCK ────────────────────────────────────────────────
 function updateClock() {
   const now = new Date();
-  // Only update HUD display — always live
   const timeStr = now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true});
   const dateStr = now.toLocaleDateString('en-GB') + ' • ' + now.toLocaleDateString('en-GB',{weekday:'long'});
   document.getElementById('dispTime').textContent = timeStr;
   document.getElementById('dispDate').textContent = dateStr;
-  // Only push into fields if user hasn't locked them manually
-  if (autoSyncTime) {
-    document.getElementById('manualTime').value = formatTime24(now);
-  }
-  if (autoSyncDate) {
-    document.getElementById('manualDate').value = formatDateISO(now);
-  }
+  if (autoSyncTime) document.getElementById('manualTime').value = formatTime24(now);
+  if (autoSyncDate) document.getElementById('manualDate').value = formatDateISO(now);
 }
 
 // ─── DATETIME LOCK TOGGLES ────────────────────────────────
@@ -716,25 +741,15 @@ function onAutoTimeToggle() {
   autoSyncTime = document.getElementById('dtAutoTime').checked;
   const field  = document.getElementById('manualTime');
   field.disabled = autoSyncTime;
-  if (autoSyncTime) {
-    field.value = formatTime24(new Date());
-    field.style.opacity = '0.5';
-  } else {
-    field.style.opacity = '1';
-    field.focus();
-  }
+  if (autoSyncTime) { field.value = formatTime24(new Date()); field.style.opacity = '0.5'; }
+  else { field.style.opacity = '1'; field.focus(); }
 }
 function onAutoDateToggle() {
   autoSyncDate = document.getElementById('dtAutoDate').checked;
   const field  = document.getElementById('manualDate');
   field.disabled = autoSyncDate;
-  if (autoSyncDate) {
-    field.value = formatDateISO(new Date());
-    field.style.opacity = '0.5';
-  } else {
-    field.style.opacity = '1';
-    field.focus();
-  }
+  if (autoSyncDate) { field.value = formatDateISO(new Date()); field.style.opacity = '0.5'; }
+  else { field.style.opacity = '1'; field.focus(); }
 }
 
 // ─── AUTO-RELOAD ──────────────────────────────────────────
@@ -754,10 +769,7 @@ function setAutoReload() {
 }
 function tickReload() {
   reloadSecsLeft--;
-  if (reloadSecsLeft <= 0) {
-    location.reload();
-    return;
-  }
+  if (reloadSecsLeft <= 0) { location.reload(); return; }
   const mins = Math.floor(reloadSecsLeft / 60);
   const secs = reloadSecsLeft % 60;
   document.getElementById('reloadCountdown').textContent =
@@ -783,7 +795,7 @@ function setDevice(el, name) {
   document.getElementById('deviceLabel').textContent = name;
 }
 function setPhotoType(el, type) {
-  document.querySelectorAll('.photo-type-opt').forEach(d => d.classList.remove('sel'));
+  document.querySelectorAll('#photoTypeRow .photo-type-opt').forEach(d => d.classList.remove('sel'));
   el.classList.add('sel');
   currentPhotoType = type;
 }
@@ -798,7 +810,7 @@ function applySettings() {
   const col = getThemeColor();
   document.documentElement.style.setProperty('--g', col);
   document.documentElement.style.setProperty('--gd', col);
-  setAutoReload();  // apply any reload setting change
+  setAutoReload();
   toggleSheet();
 }
 function toggleFlash() {
@@ -810,7 +822,6 @@ function toggleFlash() {
 
 // ─── INIT ─────────────────────────────────────────────────
 async function initApp() {
-  // Initialise date/time fields and disable them (auto-sync on)
   const now = new Date();
   document.getElementById('manualTime').value    = formatTime24(now);
   document.getElementById('manualDate').value    = formatDateISO(now);
@@ -897,7 +908,6 @@ bulkInput.onchange = async e => {
   for (let i = 0; i < n; i++) {
     let mins = startMins + i * interval;
     if (mins >= 1440) mins -= 1440;
-    // Override the time field temporarily for this shot
     const overrideEl = document.getElementById('manualTime');
     const savedAuto  = autoSyncTime;
     autoSyncTime = false;
@@ -1012,9 +1022,9 @@ function takeSnapshot(autoSave = false, originalFile = null) {
     const quality = parseInt(qualitySlider.value) / 100;
     canvas.toBlob(stampedBlob => {
       currentBlob = stampedBlob;
-      const url   = URL.createObjectURL(stampedBlob);
-      resultImg.src = url;
+      resultImg.src = URL.createObjectURL(stampedBlob);
       if (autoSave) {
+        // swap origBlob → stampedBlob here if you want the server to store the stamped copy
         uploadToServer(origBlob, originalFile);
       } else {
         previewOverlay.style.display = 'flex';
@@ -1035,9 +1045,9 @@ async function uploadToServer(blob, originalFileObj = null) {
   const timeVal  = getManualTimeDisplay();
   const dateVal  = document.getElementById('manualDate').value || formatDateISO(now);
 
-  const fd       = new FormData();
+  const fd         = new FormData();
   const uploadBlob = originalFileObj || blob;
-  const fileName = 'roadcam_' + Date.now() + '.jpg';
+  const fileName   = 'roadcam_' + Date.now() + '.jpg';
   fd.append('photo', uploadBlob instanceof File ? uploadBlob : new File([uploadBlob], fileName, {type:'image/jpeg'}), fileName);
   fd.append('type',      currentPhotoType);
   fd.append('date',      dateVal);
@@ -1057,47 +1067,123 @@ async function uploadToServer(blob, originalFileObj = null) {
   }
 }
 
-// ─── DOWNLOAD HELPER ──────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+//  SAVE / SHARE ENGINE
+// ═══════════════════════════════════════════════════════════
 function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
   const a   = document.createElement('a');
-  a.href     = url;
-  a.download = filename;
+  a.href = url; a.download = filename; a.rel = 'noopener';
   a.style.display = 'none';
   document.body.appendChild(a);
   a.click();
-  setTimeout(() => { URL.revokeObjectURL(url); document.body.removeChild(a); }, 2000);
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 4000);
+}
+
+function makeFileName(photo, i) {
+  const d = (photo && photo.date) || formatDateISO();
+  const t = ((photo && photo.time) || '').replace(/[:\s]/g, '-');
+  return ('RoadCam_' + d + '_' + (t || ('p'+i)) + '_' + ((photo && photo.id) || i) + '.jpg')
+         .replace(/[^\w.\-]/g, '_');
+}
+
+// Must run inside a real user gesture
+async function shareFiles(files, title) {
+  if (!CAN_SHARE_FILES) return false;
+  for (let i = 0; i < files.length; i += SHARE_CHUNK) {
+    const chunk = files.slice(i, i + SHARE_CHUNK);
+    if (!navigator.canShare({files: chunk})) return false;
+    try {
+      await navigator.share({files: chunk, title: title || 'Road Cam Photos'});
+    } catch(e) {
+      if (e.name === 'AbortError') return true;   // user cancelled, don't double-save
+      console.warn('share failed', e);
+      return false;
+    }
+  }
+  return true;
+}
+
+async function downloadFiles(files) {
+  // Desktop: one ZIP beats N download prompts
+  if (!IS_MOBILE && files.length > 2 && window.JSZip) {
+    try {
+      const zip = new JSZip();
+      files.forEach(f => zip.file(f.name, f));
+      const blob = await zip.generateAsync({type:'blob'});
+      downloadBlob(blob, 'RoadCam_' + Date.now() + '.zip');
+      return files.length;
+    } catch(e) { console.warn('zip failed, falling back', e); }
+  }
+  let n = 0;
+  for (const f of files) {
+    downloadBlob(f, f.name);
+    n++;
+    await new Promise(r => setTimeout(r, IS_IOS ? 1400 : 400));
+  }
+  return n;
+}
+
+function presentSave(files, mode) {
+  pendingSave = {files, mode: mode || 'auto'};
+  const useShare = (mode === 'share') || (mode !== 'download' && CAN_SHARE_FILES && IS_MOBILE);
+  if (!useShare) { doPendingSave(); return; }
+
+  document.getElementById('saveCount').textContent = files.length;
+  document.getElementById('saveHint').textContent  = IS_IOS
+    ? 'Tap Share, then choose "Save ' + (files.length > 1 ? files.length + ' Images' : 'Image') + '" to send them to Photos.'
+    : 'Tap Share to save to your gallery or send to another app.';
+  document.getElementById('savePrimaryBtn').textContent = '↗ Share / Save ' + files.length + ' photo(s)';
+  document.getElementById('saveSheet').classList.add('open');
+}
+
+function cancelPendingSave() {
+  pendingSave = null;
+  document.getElementById('saveSheet').classList.remove('open');
+}
+
+async function doPendingSave() {
+  if (!pendingSave) return;
+  const {files, mode} = pendingSave;
+  document.getElementById('saveSheet').classList.remove('open');
+
+  let ok = false;
+  if (mode !== 'download' && CAN_SHARE_FILES) ok = await shareFiles(files);
+  if (!ok) {
+    const n = await downloadFiles(files);
+    showStatus('⬇️ Saved ' + n + ' photo(s)');
+  } else {
+    showStatus('✅ ' + files.length + ' photo(s) sent');
+  }
+  pendingSave = null;
 }
 
 // ─── PREVIEW ACTIONS ──────────────────────────────────────
 function closePreview() { previewOverlay.style.display = 'none'; }
 
-// Download stamped photo to device
-document.getElementById('downloadBtn').onclick = () => {
+document.getElementById('downloadBtn').onclick = async () => {
   if (!currentBlob) return;
-  downloadBlob(currentBlob, 'RoadCam_' + Date.now() + '.jpg');
+  const f = new File([currentBlob], 'RoadCam_' + Date.now() + '.jpg', {type:'image/jpeg'});
+  if (IS_IOS && CAN_SHARE_FILES) {
+    if (await shareFiles([f])) { showStatus('✅ Sent to Photos / app'); return; }
+  }
+  downloadBlob(f, f.name);
   showStatus('⬇️ Downloaded to device!');
 };
 
-// Share
 document.getElementById('shareBtn').onclick = async () => {
   if (!currentBlob) return;
-  const file = new File([currentBlob], 'RoadCam_' + Date.now() + '.jpg', {type:'image/jpeg'});
-  if (navigator.canShare && navigator.canShare({files:[file]})) {
-    try { await navigator.share({files:[file], title:'Road Cam Photo'}); return; }
-    catch(e) { if (e.name === 'AbortError') return; }
-  }
-  const url = URL.createObjectURL(currentBlob);
+  const f = new File([currentBlob], 'RoadCam_' + Date.now() + '.jpg', {type:'image/jpeg'});
+  if (await shareFiles([f], 'Road Cam Photo')) return;
   if (navigator.share) {
-    try { await navigator.share({title:'Road Cam Photo', url}); return; }
-    catch(e) { if (e.name === 'AbortError') { URL.revokeObjectURL(url); return; } }
+    const url = URL.createObjectURL(currentBlob);
+    try { await navigator.share({title:'Road Cam Photo', url}); URL.revokeObjectURL(url); return; }
+    catch(e) { URL.revokeObjectURL(url); if (e.name === 'AbortError') return; }
   }
-  const tab = window.open(url, '_blank');
-  if (!tab) showStatus('⚠️ Pop-up blocked — allow pop-ups to share', 'error');
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  downloadBlob(f, f.name);
+  showStatus('ℹ️ Sharing unsupported — downloaded instead', 'info');
 };
 
-// Upload stamped photo to server
 document.getElementById('uploadServerBtn').onclick = async () => {
   await uploadToServer(originalBlob);
   closePreview();
@@ -1125,6 +1211,7 @@ async function loadAlbum() {
 function openAlbum() {
   selectedIds.clear();
   selectMode = false;
+  document.getElementById('selectBar').classList.remove('active');
   document.getElementById('albumOverlay').style.display = 'flex';
   loadAlbum();
 }
@@ -1220,47 +1307,50 @@ function toggleSelectMode() {
   selectMode = !selectMode;
   selectedIds.clear();
   document.getElementById('selectBar').classList.toggle('active', selectMode);
-  updateSelectModeUI();
+  renderAlbum();
   updateSelectBar();
 }
-
 function updateSelectModeUI() {
-  const items = document.querySelectorAll('.album-item, .list-item');
-  items.forEach(el => {
+  document.querySelectorAll('.album-item, .list-item').forEach(el => {
     const check = el.querySelector('.album-item-check, .list-item-check');
     if (check) check.style.display = selectMode ? 'flex' : 'none';
   });
 }
-
 function updateSelectBar() {
   document.getElementById('selectInfo').textContent = selectedIds.size + ' selected';
 }
-
 function selectAll() {
   filteredPhotos.forEach(p => selectedIds.add(p.id));
   renderAlbum();
   updateSelectBar();
 }
 
-// ─── BULK DOWNLOAD FROM ALBUM ─────────────────────────────
-async function bulkDownload() {
-  if (selectedIds.size === 0) { showStatus('No photos selected', 'error'); return; }
-  const toDownload = filteredPhotos.filter(p => selectedIds.has(p.id));
-  showStatus('⬇️ Downloading ' + toDownload.length + ' photo(s)…', 'info', 15000);
-  let done = 0;
-  for (const photo of toDownload) {
+// ─── BULK SAVE / SHARE FROM ALBUM ─────────────────────────
+async function fetchSelectedFiles() {
+  const sel   = filteredPhotos.filter(p => selectedIds.has(p.id));
+  const files = [];
+  for (let i = 0; i < sel.length; i++) {
     try {
-      const res  = await fetch(SERVER + photo.filepath);
+      const res = await fetch(SERVER + sel[i].filepath, {cache:'no-store'});
+      if (!res.ok) throw new Error(res.status);
       const blob = await res.blob();
-      const name = 'RoadCam_' + photo.id + '_' + (photo.date || 'photo') + '.jpg';
-      downloadBlob(blob, name);
-      done++;
-      await new Promise(r => setTimeout(r, 500)); // stagger downloads
-    } catch(e) {
-      console.error('Download failed for', photo.id, e);
-    }
+      files.push(new File([blob], makeFileName(sel[i], i), {type: blob.type || 'image/jpeg'}));
+    } catch(e) { console.error('fetch failed', sel[i].id, e); }
   }
-  showStatus('✅ Downloaded ' + done + ' photo(s)!');
+  return files;
+}
+
+async function bulkDownload() { await bulkSave('auto'); }
+async function bulkShare()    { await bulkSave('share'); }
+
+async function bulkSave(mode) {
+  if (selectedIds.size === 0) { showStatus('No photos selected', 'error'); return; }
+  showStatus('⏳ Preparing ' + selectedIds.size + ' photo(s)…', 'info', 60000);
+  const files = await fetchSelectedFiles();
+  if (!files.length) { showStatus('❌ Could not load photos', 'error'); return; }
+  if (files.length < selectedIds.size)
+    showStatus('⚠️ ' + files.length + '/' + selectedIds.size + ' loaded', 'info');
+  presentSave(files, mode);
 }
 
 // ─── DELETE ───────────────────────────────────────────────
@@ -1311,8 +1401,8 @@ function openSingleRestamp(photo) {
   document.getElementById('rsDate').value     = formatDateISO(now);
   document.getElementById('rsDevice').value   = currentDevice;
 
-  const pv = document.getElementById('restampPreviews');
-  pv.innerHTML = `<img class="restamp-preview" src="${SERVER}${photo.filepath}">`;
+  document.getElementById('restampPreviews').innerHTML =
+    `<img class="restamp-preview" src="${SERVER}${photo.filepath}">`;
 
   document.querySelectorAll('.restamp-sheet .photo-type-opt').forEach(el => el.classList.remove('sel'));
   document.querySelectorAll('.restamp-sheet .photo-type-opt')[photo.type === 'self' ? 1 : 0].classList.add('sel');
@@ -1333,17 +1423,15 @@ function bulkRestamp() {
   restampIds    = [...selectedIds];
   restampType   = 'poster';
 
-  const pv       = document.getElementById('restampPreviews');
   const previews = filteredPhotos.filter(p => selectedIds.has(p.id)).slice(0, 6);
-  pv.innerHTML   = '<div class="restamp-multi-preview">' + previews.map(p =>
-    `<img src="${SERVER}${p.filepath}">`
-  ).join('') + '</div>';
+  document.getElementById('restampPreviews').innerHTML =
+    '<div class="restamp-multi-preview">' + previews.map(p => `<img src="${SERVER}${p.filepath}">`).join('') + '</div>';
 
   const now = new Date();
-  document.getElementById('rsRoad').value     = document.getElementById('manualRoad').value;
-  document.getElementById('rsTown').value     = document.getElementById('manualTown').value;
-  document.getElementById('rsProvince').value = document.getElementById('manualProvince').value;
-  document.getElementById('rsDate').value     = formatDateISO(now);
+  document.getElementById('rsRoad').value      = document.getElementById('manualRoad').value;
+  document.getElementById('rsTown').value      = document.getElementById('manualTown').value;
+  document.getElementById('rsProvince').value  = document.getElementById('manualProvince').value;
+  document.getElementById('rsDate').value      = formatDateISO(now);
   document.getElementById('rsBulkEnd').value   = formatTime24(now);
   document.getElementById('rsBulkStart').value = '09:00';
   document.getElementById('rsDevice').value    = currentDevice;
@@ -1365,9 +1453,7 @@ function setRestampType(el, type) {
   el.classList.add('sel');
   restampType = type;
 }
-function closeRestamp() {
-  document.getElementById('restampSheet').classList.remove('open');
-}
+function closeRestamp() { document.getElementById('restampSheet').classList.remove('open'); }
 
 async function applyRestamp() {
   const baseOpts = {
@@ -1375,7 +1461,6 @@ async function applyRestamp() {
     town:     document.getElementById('rsTown').value,
     province: document.getElementById('rsProvince').value,
     date:     (() => {
-      // convert YYYY-MM-DD to DD/MM/YYYY for overlay display
       const v = document.getElementById('rsDate').value;
       if (!v) return formatDateDMY();
       const [y,m,d] = v.split('-');
@@ -1392,11 +1477,8 @@ async function applyRestamp() {
   if (isBulkRestamp && restampIds.length > 0) {
     const startStr = document.getElementById('rsBulkStart').value || '09:00';
     const endStr   = document.getElementById('rsBulkEnd').value   || currentHM();
-    const startM   = hmToMins(startStr);
-    const endM     = hmToMins(endStr);
-    timeSlots      = randomTimeSlots(startM, endM, restampIds.length);
+    timeSlots      = randomTimeSlots(hmToMins(startStr), hmToMins(endStr), restampIds.length);
   } else {
-    // rsTime is HH:MM — convert to 12h display
     const v = document.getElementById('rsTime').value;
     let t12 = formatTime12();
     if (v) {
@@ -1413,12 +1495,10 @@ async function applyRestamp() {
 
   let done = 0;
   for (let i = 0; i < restampIds.length; i++) {
-    const id    = restampIds[i];
-    const photo = albumPhotos.find(p => p.id === id);
+    const photo = albumPhotos.find(p => p.id === restampIds[i]);
     if (!photo) continue;
-    const opts  = { ...baseOpts, time: timeSlots[i] };
-    try { await restampAndUpload(photo, opts); done++; }
-    catch(e) { console.error('Restamp failed for', id, e); }
+    try { await restampAndUpload(photo, { ...baseOpts, time: timeSlots[i] }); done++; }
+    catch(e) { console.error('Restamp failed for', restampIds[i], e); }
   }
 
   showStatus('✅ Re-stamped ' + done + ' photo(s)!');
@@ -1495,9 +1575,7 @@ function openDirectUpload() {
   document.getElementById('duTimeEnd').value  = formatTime24(now);
   document.getElementById('directUploadOverlay').classList.add('open');
 }
-function closeDirectUpload() {
-  document.getElementById('directUploadOverlay').classList.remove('open');
-}
+function closeDirectUpload() { document.getElementById('directUploadOverlay').classList.remove('open'); }
 function setDuType(el, type) {
   document.querySelectorAll('#directUploadOverlay .photo-type-opt').forEach(d => d.classList.remove('sel'));
   el.classList.add('sel');
@@ -1553,14 +1631,11 @@ async function duStartUpload() {
 
   const startStr = document.getElementById('duTimeStart').value || '09:00';
   const endStr   = document.getElementById('duTimeEnd').value   || currentHM();
-  const startM   = hmToMins(startStr);
-  const endM     = hmToMins(endStr);
-  const times    = randomTimeSlots(startM, endM, duFiles.length);
+  const times    = randomTimeSlots(hmToMins(startStr), hmToMins(endStr), duFiles.length);
 
-  const road    = document.getElementById('duRoad').value     || 'Unknown Road';
+  const road    = document.getElementById('duRoad').value || 'Unknown Road';
   const town    = document.getElementById('duTown').value;
   const prov    = document.getElementById('duProvince').value;
-  // duDate is YYYY-MM-DD — convert for display on stamp
   const isoDate = document.getElementById('duDate').value;
   let dateDisplay = formatDateDMY();
   if (isoDate) {
@@ -1568,7 +1643,7 @@ async function duStartUpload() {
     const dt = new Date(parseInt(y),parseInt(m)-1,parseInt(d));
     dateDisplay = dt.toLocaleDateString('en-GB') + ' • ' + dt.toLocaleDateString('en-GB',{weekday:'long'});
   }
-  const device   = document.getElementById('duDevice').value   || currentDevice;
+  const device   = document.getElementById('duDevice').value || currentDevice;
   const quality  = parseInt(document.getElementById('duQuality').value) / 100;
   const color    = themeColors[document.getElementById('duTheme').value] || '#00d97e';
   const location = [road, town, prov].filter(Boolean).join(', ');
@@ -1597,7 +1672,7 @@ async function duStartUpload() {
         r.readAsDataURL(duFiles[i].file);
       });
 
-      const tw = img.naturalWidth; const th = img.naturalHeight;
+      const tw = img.naturalWidth, th = img.naturalHeight;
       canvas.width = tw; canvas.height = th;
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, tw, th);
@@ -1607,9 +1682,9 @@ async function duStartUpload() {
         coords: gpsCoords, device: device
       });
 
-      const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', quality));
-      const now  = new Date();
-      const fd   = new FormData();
+      const blob  = await new Promise(res => canvas.toBlob(res, 'image/jpeg', quality));
+      const now   = new Date();
+      const fd    = new FormData();
       const fname = 'du_' + Date.now() + '.jpg';
       fd.append('photo',     new File([blob], fname, {type:'image/jpeg'}), fname);
       fd.append('type',      duType);
@@ -1621,8 +1696,8 @@ async function duStartUpload() {
 
       const r = await fetch(SERVER + '/api/upload', {method:'POST', body:fd});
       const d = await r.json();
-      if (d.success) { duFiles[i].status = 'done'; done++; }
-      else            { duFiles[i].status = 'error'; }
+      duFiles[i].status = d.success ? 'done' : 'error';
+      if (d.success) done++;
     } catch(e) {
       duFiles[i].status = 'error';
       console.error('DU upload error', e);
