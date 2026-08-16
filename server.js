@@ -252,7 +252,26 @@ app.delete('/api/routes/:id', (req, res) => {
     res.json({ success: true });
   });
 });
+// Update photo location/route
+app.patch('/api/photos/:id/location', (req, res) => {
+  const { location } = req.body;
+  if (!location) return res.status(400).json({ error: 'Location required' });
+  db.run('UPDATE photos SET location = ? WHERE id = ?', [location, req.params.id], function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ success: true });
+  });
+});
 
+// Bulk update location
+app.patch('/api/photos/bulk/location', (req, res) => {
+  const { ids, location } = req.body;
+  if (!ids || !ids.length || !location) return res.status(400).json({ error: 'ids and location required' });
+  const placeholders = ids.map(() => '?').join(',');
+  db.run(`UPDATE photos SET location = ? WHERE id IN (${placeholders})`, [location, ...ids], function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ success: true, updated: this.changes });
+  });
+});
 
 // Health check
 app.get('/api/health', (req, res) => {
