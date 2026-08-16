@@ -33,6 +33,13 @@ db.serialize(() => {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
+  db.run(`
+    CREATE TABLE IF NOT EXISTS routes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT UNIQUE NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
 });
 
 // Middleware
@@ -220,6 +227,32 @@ app.get('/api/export', (req, res) => {
     res.send(JSON.stringify(rows, null, 2));
   });
 });
+// Get all routes
+app.get('/api/routes', (req, res) => {
+  db.all('SELECT * FROM routes ORDER BY name ASC', (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows || []);
+  });
+});
+
+// Add route
+app.post('/api/routes', (req, res) => {
+  const { name } = req.body;
+  if (!name || !name.trim()) return res.status(400).json({ error: 'Route name required' });
+  db.run('INSERT INTO routes (name) VALUES (?)', [name.trim().toUpperCase()], function(err) {
+    if (err) return res.status(400).json({ error: 'Route already exists' });
+    res.json({ success: true, id: this.lastID, name: name.trim().toUpperCase() });
+  });
+});
+
+// Delete route
+app.delete('/api/routes/:id', (req, res) => {
+  db.run('DELETE FROM routes WHERE id = ?', [req.params.id], function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ success: true });
+  });
+});
+
 
 // Health check
 app.get('/api/health', (req, res) => {
