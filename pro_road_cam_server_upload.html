@@ -2137,4 +2137,25 @@ async function duStartUpload() {
   }
 
   showStatus('✅ Uploaded ' + done + '/' + duFiles.length + ' photos!');
-  btn.disa
+  btn.disabled = false;
+  setTimeout(() => {
+    duFiles = duFiles.filter(f => f.status !== 'done');
+    renderDuQueue();
+    progressBar.style.display = 'none';
+    progressFill.style.width  = '0%';
+    document.getElementById('duUploadBtn').disabled = duFiles.length === 0;
+  }, 3000);
+}
+
+function duClear() {
+  duFiles = [];
+  renderDuQueue();
+  document.getElementById('duUploadBtn').disabled = true;
+  document.getElementById('duProgressBar').style.display = 'none';
+  document.getElementById('duProgressFill').style.width  = '0%';
+}
+
+initApp();
+</script>
+</body>
+</html>
