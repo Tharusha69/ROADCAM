@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Pro Road Ca</title>
+<title>Pro Road Cam v8.6</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
@@ -1156,11 +1156,6 @@ function openBulkDetailsSheet(files) {
   setBdActionBtnsEnabled(true);
 
   document.getElementById('bulkDetailsSheet').classList.add('open');
-
-  // Auto-upload to server if online
-  if (serverOnline) {
-    setTimeout(() => executeBulk('server'), 300);
-  }
 }
 
 function closeBulkDetails() {
@@ -1285,13 +1280,15 @@ async function executeBulk(action) {
     closeBulkDetails();
   } else {
     // Share action
-    closeBulkDetails();
     if (stampedFiles.length === 0) {
       showStatus('❌ No photos could be processed', 'error');
+      setBdActionBtnsEnabled(true);
       return;
     }
     if (errors > 0) showStatus('⚠️ ' + errors + ' failed, sharing ' + stampedFiles.length, 'info', 4000);
-    presentSave(stampedFiles, 'share');
+    closeBulkDetails();
+    await shareFiles(stampedFiles, 'Road Cam Photos');
+    if (!CAN_SHARE_FILES) await downloadFiles(stampedFiles);
   }
 }
 
