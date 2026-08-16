@@ -799,6 +799,10 @@ let reloadTimerID    = null;
 let autoSyncTime     = true;
 let autoSyncDate     = true;
 
+// Cached GPS-resolved location for auto-fill
+let gpsRoad     = '';
+let gpsTown     = '';
+let gpsProvince = '';
 const themeColors = {green:'#00d97e',blue:'#3b82f6',amber:'#f59e0b',red:'#ef4444',white:'#ffffff'};
 
 // ═══════════════════════════════════════════════════════════
@@ -1001,6 +1005,24 @@ function toggleFlash() {
 }
 
 // ─── INIT ─────────────────────────────────────────────────
+// ─── AUTO-FILL GPS INTO SHEETS ────────────────────────────
+function applyGpsToSheets() {
+  // Direct-upload sheet
+  const duRoadEl = document.getElementById('duRoad');
+  if (duRoadEl && !duRoadEl.value) duRoadEl.value = gpsRoad;
+  const duTownEl = document.getElementById('duTown');
+  if (duTownEl && !duTownEl.value) duTownEl.value = gpsTown;
+  const duProvEl = document.getElementById('duProvince');
+  if (duProvEl && !duProvEl.value) duProvEl.value = gpsProvince;
+
+  // Bulk-details sheet
+  const bdRoadEl = document.getElementById('bdRoad');
+  if (bdRoadEl && !bdRoadEl.value) bdRoadEl.value = gpsRoad;
+  const bdTownEl = document.getElementById('bdTown');
+  if (bdTownEl && !bdTownEl.value) bdTownEl.value = gpsTown;
+  const bdProvEl = document.getElementById('bdProvince');
+  if (bdProvEl && !bdProvEl.value) bdProvEl.value = gpsProvince;
+}
 async function initApp() {
   const now = new Date();
   document.getElementById('manualTime').value    = formatTime24(now);
@@ -1029,12 +1051,18 @@ async function initApp() {
       const r = await fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat='+lat+'&lon='+lon);
       const d = await r.json();
       const a = d.address || {};
-      const road = a.road || a.suburb || 'Unnamed Road';
+const road = a.road || a.suburb || 'Unnamed Road';
       const city = a.city  || a.town  || a.village || '';
       const prov = a.state || '';
+      // Cache for auto-fill in sheets
+      gpsRoad     = road;
+      gpsTown     = city;
+      gpsProvince = prov;
       document.getElementById('manualRoad').value     = road;
       document.getElementById('manualTown').value     = city;
       document.getElementById('manualProvince').value = prov;
+      // Push into any already-open sheets
+      applyGpsToSheets();
       document.getElementById('dispRoad').textContent = road.toUpperCase();
       document.getElementById('dispCity').textContent = [city,prov].filter(Boolean).join(', ');
       document.getElementById('gpsText').textContent  = road + (city ? ', '+city : '');
@@ -1091,9 +1119,9 @@ function openBulkDetailsSheet(files) {
   });
 
   // Pre-fill from live settings
-  document.getElementById('bdRoad').value     = document.getElementById('manualRoad').value;
-  document.getElementById('bdTown').value     = document.getElementById('manualTown').value;
-  document.getElementById('bdProvince').value = document.getElementById('manualProvince').value;
+  document.getElementById('bdRoad').value     = document.getElementById('manualRoad').value || gpsRoad;
+  document.getElementById('bdTown').value     = document.getElementById('manualTown').value || gpsTown;
+  document.getElementById('bdProvince').value = document.getElementById('manualProvince').value || gpsProvince;
   document.getElementById('bdDate').value     = formatDateISO(now);
   document.getElementById('bdTimeStart').value = '09:00';
   document.getElementById('bdTimeEnd').value   = formatTime24(now);
@@ -1996,9 +2024,9 @@ function loadImage(src) {
 // ─── DIRECT UPLOAD OVERLAY ────────────────────────────────
 function openDirectUpload() {
   const now = new Date();
-  document.getElementById('duRoad').value     = document.getElementById('manualRoad').value;
-  document.getElementById('duTown').value     = document.getElementById('manualTown').value;
-  document.getElementById('duProvince').value = document.getElementById('manualProvince').value;
+  document.getElementById('duRoad').value     = document.getElementById('manualRoad').value || gpsRoad;
+  document.getElementById('duTown').value     = document.getElementById('manualTown').value || gpsTown;
+  document.getElementById('duProvince').value = document.getElementById('manualProvince').value || gpsProvince;
   document.getElementById('duDate').value     = formatDateISO(now);
   document.getElementById('duDevice').value   = currentDevice;
   document.getElementById('duTimeEnd').value  = formatTime24(now);
@@ -2115,7 +2143,7 @@ async function duStartUpload() {
       const now   = new Date();
       const fd    = new FormData();
       const fname = 'du_' + Date.now() + '.jpg';
-      fd.append('photo',     new File([blob], fname, {type:'image/jpeg'}), fname);
+      fd.append('photo', new File([blob], fname, {type:'image/jpeg'}));
       fd.append('type',      duType);
       fd.append('date',      isoDate || now.toISOString().split('T')[0]);
       fd.append('time',      times[i]);
