@@ -19,8 +19,7 @@ const db = new sqlite3.Database('/data/roadcam.db');
 
 // Create tables
 db.serialize(() => {
-  db.run(`
-    CREATE TABLE IF NOT EXISTS photos (
+  db.run(`ALTER TABLE photos ADD COLUMN original_filepath TEXT DEFAULT ''`, () => {});
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       filename TEXT UNIQUE NOT NULL,
       type TEXT NOT NULL,
@@ -80,10 +79,10 @@ app.post('/api/upload', upload.single('photo'), (req, res) => {
   const filename = req.file.filename;
   const filepath = `/uploads/${filename}`;
 
-  const sql = `INSERT INTO photos (filename, type, date, time, timestamp, location, route, device, filepath) 
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+  const sql = `INSERT INTO photos (filename, type, date, time, timestamp, location, route, device, filepath, original_filepath) 
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
-  db.run(sql, [filename, type, date, time, timestamp, location, route || '', device, filepath], function(err) {
+  db.run(sql, [filename, type, date, time, timestamp, location, route || '', device, filepath, filepath], function(err) {
     if (err) {
       fs.unlinkSync(req.file.path);
       return res.status(500).json({ error: 'Database error: ' + err.message });
@@ -168,16 +167,18 @@ app.get('/api/stats', (req, res) => {
 app.put("/api/restamp/:id", upload.single("photo"), (req, res) => {
   const { id } = req.params;
   const { type, date, time, timestamp, location, device } = req.body;
-  db.get("SELECT filepath FROM photos WHERE id = ?", [id], (err, photo) => {
+  db.get("SELECT filepath, original_filepath FROM photos WHERE id = ?", [id], (err, photo) => {
     if (err || !photo) return res.status(404).json({ error: "Photo not found" });
     const route = req.body.route || '';
     if (req.file) {
+      // Delete previous STAMPED file only (not original)
       const oldPath = path.join("/data", photo.filepath);
-      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      if (fs.existsSync(oldPath) && photo.filepath !== photo.original_filepath) fs.unlinkSync(oldPath);
       const newFilepath = "/uploads/" + req.file.filename;
-      db.run("UPDATE photos SET type=?,date=?,time=?,timestamp=?,location=?,route=?,device=?,filename=?,filepath=? WHERE id=?",
-        [type,date,time,timestamp,location,route,device,req.file.filename,newFilepath,id],
-        function(err){ if(err) return res.status(500).json({error:err.message}); res.json({success:true,id,filepath:newFilepath}); });
+      const origPath = photo.original_filepath || photo.filepath;
+      db.run("UPDATE photos SET type=?,date=?,time=?,timestamp=?,location=?,route=?,device=?,filename=?,filepath=?,original_filepath=? WHERE id=?",
+        [type,date,time,timestamp,location,route,device,req.file.filename,newFilepath,origPath,id],
+        function(err){ if(err) return res.status(500).json({error:err.message}); res.json({success:true,id,filepath:newFilepath,original_filepath:origPath}); });
     } else {
       db.run("UPDATE photos SET type=?,date=?,time=?,timestamp=?,location=?,route=?,device=? WHERE id=?",
         [type,date,time,timestamp,location,route,device,id],
