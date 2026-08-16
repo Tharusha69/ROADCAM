@@ -1104,9 +1104,8 @@ bulkInput.onchange = async e => {
   if (!files.length) return;
 
   if (serverOnline) {
-    // Open sheet AND auto-upload simultaneously
     openBulkDetailsSheet(files);
-    autoServerUpload(files);
+    autoServerUpload(files); // runs in background, sheet stays open
   } else {
     openBulkDetailsSheet(files);
   }
@@ -2265,6 +2264,8 @@ async function autoServerUpload(files) {
     ? '✅ Uploaded ' + done + '/' + files.length + ' photos!'
     : '⚠️ Uploaded ' + done + '/' + files.length + ' (' + (files.length - done) + ' failed)',
     done < files.length ? 'info' : 'success');
+
+  // Do NOT auto-close — let user Save / Share / edit details freely
 }
 
 initApp();
