@@ -456,19 +456,22 @@ input[type="date"].sfield{color-scheme:dark;color:#fff}
     </div>
   </div>
 
-  <div class="album-filters">
-    <button class="filter-btn active" onclick="filterAlbum(this,'all')">All</button>
-    <button class="filter-btn" onclick="filterAlbum(this,'poster')">📸 Poster</button>
-    <button class="filter-btn" onclick="filterAlbum(this,'self')">🤳 Self</button>
-    <input type="date" id="filterDate" class="sfield" style="flex:1;max-width:130px;height:32px;padding:6px 10px;font-size:11px" onchange="loadAlbum()">
-    <div style="display:flex;gap:4px;flex:1;min-width:0">
-      <input type="text" id="filterRoute" class="sfield" placeholder="🔍 Route…" style="flex:1;height:32px;padding:6px 10px;font-size:11px" oninput="debounceLoad()" readonly>
-      <button onclick="openRoutesSheet()" style="background:rgba(0,217,126,0.15);border:1px solid rgba(0,217,126,0.3);color:var(--g);border-radius:8px;padding:0 10px;font-size:14px;cursor:pointer;white-space:nowrap;height:32px">📍</button>
+  <div class="album-filters" style="flex-wrap:wrap;row-gap:8px">
+    <!-- Row 1: type filters + view toggle -->
+    <div style="display:flex;gap:6px;width:100%;align-items:center">
+      <button class="filter-btn active" onclick="filterAlbum(this,'all')">All</button>
+      <button class="filter-btn" onclick="filterAlbum(this,'poster')">📸 Poster</button>
+      <button class="filter-btn" onclick="filterAlbum(this,'self')">🤳 Self</button>
+      <div class="view-toggle" style="margin-left:auto">
+        <button class="view-btn active" onclick="switchView(this,'grid')">⊞</button>
+        <button class="view-btn" onclick="switchView(this,'list')">☰</button>
+      </div>
     </div>
-    
-      <div class="view-toggle">
-      <button class="view-btn active" onclick="switchView(this,'grid')">⊞</button>
-      <button class="view-btn" onclick="switchView(this,'list')">☰</button>
+    <!-- Row 2: date + route filter -->
+    <div style="display:flex;gap:6px;width:100%;align-items:center">
+      <input type="date" id="filterDate" class="sfield" style="flex:1;height:36px;padding:6px 10px;font-size:11px" onchange="loadAlbum()">
+      <input type="text" id="filterRoute" class="sfield" placeholder="📍 Route filter…" style="flex:2;height:36px;padding:6px 10px;font-size:11px" readonly>
+      <button onclick="openRoutesSheet()" style="background:rgba(0,217,126,0.15);border:1px solid rgba(0,217,126,0.3);color:var(--g);border-radius:8px;padding:0 12px;font-size:14px;cursor:pointer;white-space:nowrap;height:36px;flex-shrink:0">📍</button>
     </div>
   </div>
 
@@ -868,6 +871,8 @@ let selectMode       = false;
 let selectedIds      = new Set();
 
 let restampIds       = [];
+let stampedPhotoIds  = new Set();
+let stampedPhotoIds  = new Set();
 let restampType      = 'poster';
 let isBulkRestamp    = false;
 
@@ -1914,7 +1919,9 @@ function renderAlbum() {
     list.classList.remove('active');
     filteredPhotos.forEach(photo => {
       const el = document.createElement('div');
+      const wasStamped = stampedPhotoIds.has(photo.id);
       el.className = 'album-item' + (selectedIds.has(photo.id) ? ' selected' : '');
+      if (wasStamped) el.style.boxShadow = '0 0 0 2px #00d97e, inset 0 0 0 1px #00d97e44';
       el.innerHTML = `
         <img src="${SERVER}${photo.filepath}" loading="lazy">
         <div class="album-item-type">${photo.type === 'self' ? '🤳' : '📸'}</div>
@@ -1929,6 +1936,7 @@ function renderAlbum() {
     filteredPhotos.forEach(photo => {
       const el = document.createElement('div');
       el.className = 'list-item' + (selectedIds.has(photo.id) ? ' selected' : '');
+      if (stampedPhotoIds.has(photo.id)) el.style.borderLeft = '3px solid #00d97e';
       el.innerHTML = `
         <div class="list-item-thumb">
           <img src="${SERVER}${photo.filepath}" loading="lazy">
@@ -2178,6 +2186,9 @@ function setRestampType(el, type) {
 function closeRestamp() {
   document.getElementById('restampSheet').classList.remove('open');
   document.getElementById('rsProgressWrap').style.display = 'none';
+  const actionRow = document.getElementById('rsActionRow');
+  actionRow.style.opacity = '1';
+  actionRow.style.pointerEvents = '';
 }
 
 // ─── applyRestamp — unified handler ───────────────────────
@@ -2266,6 +2277,7 @@ async function applyRestamp(action) {
     const msg = errors > 0
       ? '⚠️ ' + done + '/' + restampIds.length + ' uploaded (' + errors + ' failed)'
       : '✅ Re-stamped & uploaded ' + done + ' photo(s)!';
+    restampIds.forEach(id => stampedPhotoIds.add(id));
     showStatus(msg, errors > 0 ? 'info' : 'success');
     closeRestamp();
     selectedIds.clear(); selectMode = false;
@@ -2278,6 +2290,7 @@ async function applyRestamp(action) {
       return;
     }
     if (errors > 0) showStatus('⚠️ ' + errors + ' photo(s) failed, delivering ' + processedFiles.length, 'info', 4000);
+    restampIds.forEach(id => stampedPhotoIds.add(id));
     presentSave(processedFiles, action);
     selectedIds.clear(); selectMode = false;
     document.getElementById('selectBar').classList.remove('active');
