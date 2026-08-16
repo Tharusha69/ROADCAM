@@ -871,7 +871,7 @@ let selectMode       = false;
 let selectedIds      = new Set();
 
 let restampIds       = [];
-let stampedPhotoIds  = new Set();
+let stampedPhotoIds  = new Set(JSON.parse(localStorage.getItem('stampedPhotoIds') || '[]'));
 let restampType      = 'poster';
 let isBulkRestamp    = false;
 
@@ -1920,7 +1920,7 @@ function renderAlbum() {
       const el = document.createElement('div');
       const wasStamped = stampedPhotoIds.has(photo.id);
       el.className = 'album-item' + (selectedIds.has(photo.id) ? ' selected' : '');
-      if (wasStamped) el.style.boxShadow = '0 0 0 2px #00d97e, inset 0 0 0 1px #00d97e44';
+      if (wasStamped) el.style.boxShadow = '0 0 0 2px #a855f7, inset 0 0 0 1px #a855f744';
       el.innerHTML = `
         <img src="${SERVER}${photo.filepath}" loading="lazy">
         <div class="album-item-type">${photo.type === 'self' ? '🤳' : '📸'}</div>
@@ -1935,7 +1935,7 @@ function renderAlbum() {
     filteredPhotos.forEach(photo => {
       const el = document.createElement('div');
       el.className = 'list-item' + (selectedIds.has(photo.id) ? ' selected' : '');
-      if (stampedPhotoIds.has(photo.id)) el.style.borderLeft = '3px solid #00d97e';
+      if (stampedPhotoIds.has(photo.id)) el.style.borderLeft = '3px solid #a855f7';
       el.innerHTML = `
         <div class="list-item-thumb">
           <img src="${SERVER}${photo.filepath}" loading="lazy">
@@ -2277,7 +2277,8 @@ async function applyRestamp(action) {
       ? '⚠️ ' + done + '/' + restampIds.length + ' uploaded (' + errors + ' failed)'
       : '✅ Re-stamped & uploaded ' + done + ' photo(s)!';
     restampIds.forEach(id => stampedPhotoIds.add(id));
-    showStatus(msg, errors > 0 ? 'info' : 'success');
+localStorage.setItem('stampedPhotoIds', JSON.stringify([...stampedPhotoIds]));
+showStatus(msg, errors > 0 ? 'info' : 'success');
     closeRestamp();
     selectedIds.clear(); selectMode = false;
     document.getElementById('selectBar').classList.remove('active');
@@ -2290,7 +2291,8 @@ async function applyRestamp(action) {
     }
     if (errors > 0) showStatus('⚠️ ' + errors + ' photo(s) failed, delivering ' + processedFiles.length, 'info', 4000);
     restampIds.forEach(id => stampedPhotoIds.add(id));
-    presentSave(processedFiles, action);
+localStorage.setItem('stampedPhotoIds', JSON.stringify([...stampedPhotoIds]));
+presentSave(processedFiles, action);
     selectedIds.clear(); selectMode = false;
     document.getElementById('selectBar').classList.remove('active');
   }
