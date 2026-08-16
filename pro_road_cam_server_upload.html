@@ -2478,7 +2478,7 @@ async function duStartUpload() {
       const fd    = new FormData();
       const fname = 'du_' + Date.now() + '.jpg';
       fd.append('photo', new File([origBlob], fname, {type:'image/jpeg'}));
-      fd.append('type',      duType);
+      fd.append('type',      bdType);
       fd.append('date',      isoDate || now.toISOString().split('T')[0]);
       fd.append('time',      times[i]);
       fd.append('timestamp', now.toLocaleString());
@@ -2575,7 +2575,7 @@ async function autoServerUpload(files) {
       const fname = 'bulk_' + Date.now() + '_' + i + '.jpg';
       const fd    = new FormData();
       fd.append('photo', new File([origBlob], fname, {type:'image/jpeg'}));
-      fd.append('type',      duType);
+      fd.append('type',      bdType);
       fd.append('date',      isoDate || now.toISOString().split('T')[0]);
       fd.append('time',      times[i]);
       fd.append('timestamp', now.toLocaleString());
