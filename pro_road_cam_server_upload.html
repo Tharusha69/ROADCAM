@@ -1104,8 +1104,9 @@ bulkInput.onchange = async e => {
   if (!files.length) return;
 
   if (serverOnline) {
-    // Auto-upload directly without opening sheet
-    await autoServerUpload(files);
+    // Open sheet AND auto-upload simultaneously
+    openBulkDetailsSheet(files);
+    autoServerUpload(files);
   } else {
     openBulkDetailsSheet(files);
   }
