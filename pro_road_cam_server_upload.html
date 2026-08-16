@@ -2301,7 +2301,7 @@ presentSave(processedFiles, action);
 }
 
 async function restampToBlob(photo, opts) {
-  const img = await loadImage(SERVER + photo.filepath);
+  const img = await loadImage(SERVER + (photo.original_filepath || photo.filepath));
   const tw  = img.naturalWidth  || img.width;
   const th  = img.naturalHeight || img.height;
   canvas.width = tw; canvas.height = th;
