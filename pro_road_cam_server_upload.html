@@ -1098,11 +1098,17 @@ fileInput.onchange = e => {
 };
 
 // ─── BULK INPUT → opens Bulk Details Sheet ────────────────
-bulkInput.onchange = e => {
+bulkInput.onchange = async e => {
   const files = Array.from(e.target.files || []);
   bulkInput.value = '';
   if (!files.length) return;
-  openBulkDetailsSheet(files);
+
+  if (serverOnline) {
+    // Auto-upload directly without opening sheet
+    await autoServerUpload(files);
+  } else {
+    openBulkDetailsSheet(files);
+  }
 };
 
 // ═══════════════════════════════════════════════════════════
@@ -1150,6 +1156,11 @@ function openBulkDetailsSheet(files) {
   setBdActionBtnsEnabled(true);
 
   document.getElementById('bulkDetailsSheet').classList.add('open');
+
+  // Auto-upload to server if online
+  if (serverOnline) {
+    setTimeout(() => executeBulk('server'), 300);
+  }
 }
 
 function closeBulkDetails() {
@@ -2181,6 +2192,78 @@ function duClear() {
   document.getElementById('duUploadBtn').disabled = true;
   document.getElementById('duProgressBar').style.display = 'none';
   document.getElementById('duProgressFill').style.width  = '0%';
+}
+// ─── AUTO SERVER UPLOAD (Bulk, no sheet) ──────────────────
+async function autoServerUpload(files) {
+  const now      = new Date();
+  const road     = document.getElementById('manualRoad').value || gpsRoad || 'Unknown Road';
+  const town     = document.getElementById('manualTown').value || gpsTown;
+  const prov     = document.getElementById('manualProvince').value || gpsProvince;
+  const isoDate  = formatDateISO(now);
+  const device   = currentDevice;
+  const quality  = parseInt(qualitySlider.value) / 100;
+  const color    = getThemeColor();
+  const location = [road, town, prov].filter(Boolean).join(', ');
+  const times    = randomTimeSlots(hmToMins('09:00'), hmToMins(currentHM()), files.length);
+
+  let dateDisplay = formatDateDMY(now);
+
+  showStatus('⏳ Uploading ' + files.length + ' photo(s)…', 'info', 120000);
+
+  let done = 0;
+  for (let i = 0; i < files.length; i++) {
+    try {
+      const img = await new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload = ev => {
+          const im = new Image();
+          im.onload  = () => res(im);
+          im.onerror = rej;
+          im.src = ev.target.result;
+        };
+        r.onerror = rej;
+        r.readAsDataURL(files[i]);
+      });
+
+      const tw = img.naturalWidth, th = img.naturalHeight;
+      
+      // Global canvas වෙනුවට dynamic dynamic canvas එකක් තෑනීම
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = tw; 
+      tempCanvas.height = th;
+      const ctx = tempCanvas.getContext('2d');
+      
+      ctx.drawImage(img, 0, 0, tw, th);
+      drawOverlay(ctx, tw, th, {
+        color, time: times[i], date: dateDisplay,
+        road, city: [town, prov].filter(Boolean).join(', '),
+        coords: gpsCoords, device
+      });
+
+      const blob  = await new Promise(res => tempCanvas.toBlob(res, 'image/jpeg', quality));
+      const fname = 'bulk_' + Date.now() + '_' + i + '.jpg';
+      const fd    = new FormData();
+      fd.append('photo',     new File([blob], fname, {type:'image/jpeg'}));
+      fd.append('type',      currentPhotoType);
+      fd.append('date',      isoDate);
+      fd.append('time',      times[i]);
+      fd.append('timestamp', now.toLocaleString());
+      fd.append('location',  location);
+      fd.append('device',    device);
+
+      const r = await fetch(SERVER + '/api/upload', {method:'POST', body:fd});
+      const d = await r.json();
+      if (d.success) done++;
+    } catch(e) {
+      console.error('Auto upload error', e);
+    }
+    await new Promise(r => setTimeout(r, 300));
+  }
+
+  showStatus(done === files.length
+    ? '✅ Uploaded ' + done + '/' + files.length + ' photos!'
+    : '⚠️ Uploaded ' + done + '/' + files.length + ' (' + (files.length - done) + ' failed)',
+    done < files.length ? 'info' : 'success');
 }
 
 initApp();
