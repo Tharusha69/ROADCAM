@@ -2468,16 +2468,12 @@ async function duStartUpload() {
       });
 
       const tw = img.naturalWidth, th = img.naturalHeight;
-      canvas.width = tw; canvas.height = th;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, tw, th);
-      drawOverlay(ctx, tw, th, {
-        color: color, time: times[i], date: dateDisplay,
-        road: road, city: [town, prov].filter(Boolean).join(', '),
-        coords: gpsCoords, device: device
-      });
 
-      const origBlob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 1.0));
+      // Original (stamp නැති) canvas
+      const origCanvas = document.createElement('canvas');
+      origCanvas.width = tw; origCanvas.height = th;
+      origCanvas.getContext('2d').drawImage(img, 0, 0, tw, th);
+      const origBlob = await new Promise(res => origCanvas.toBlob(res, 'image/jpeg', 1.0));
       const now   = new Date();
       const fd    = new FormData();
       const fname = 'du_' + Date.now() + '.jpg';
