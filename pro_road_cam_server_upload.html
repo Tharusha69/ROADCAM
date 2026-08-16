@@ -616,7 +616,7 @@ input[type="date"].sfield{color-scheme:dark;color:#fff}
         <div class="photo-type-opt" onclick="setBdType(this,'self')">🤳 Self Photo</div>
       </div>
       <span class="field-label">Route</span>
-      <select id="bdRoute" class="sfield" style="margin-bottom:4px">
+      <select id="bdRoute" class="sfield" style="margin-bottom:4px" onchange="onBdRouteChange()">
         <option value="">-- Select Route (optional) --</option>
       </select>
       <span class="field-label">Road Name</span>
@@ -1184,17 +1184,30 @@ fileInput.onchange = e => {
 };
 
 // ─── BULK INPUT → opens Bulk Details Sheet ────────────────
+
+let _pendingAutoUploadFiles = null;
+
 bulkInput.onchange = async e => {
   const files = Array.from(e.target.files || []);
   bulkInput.value = '';
   if (!files.length) return;
 
+  if (!allRoutes.length) await loadRoutes();
+  else populateRouteSelects();
+
   openBulkDetailsSheet(files);
+
   if (serverOnline) {
-    autoServerUpload(files);
+    _pendingAutoUploadFiles = files;
+    // Route select නොකළත් 8 seconds ඇතුළත auto-start
+    _autoUploadTimer = setTimeout(() => {
+      if (_pendingAutoUploadFiles) {
+        autoServerUpload(_pendingAutoUploadFiles);
+        _pendingAutoUploadFiles = null;
+      }
+    }, 8000);
   }
 };
-
 // ═══════════════════════════════════════════════════════════
 //  BULK DETAILS SHEET  — open / close / type / execute
 // ═══════════════════════════════════════════════════════════
@@ -1240,6 +1253,19 @@ function openBulkDetailsSheet(files) {
   setBdActionBtnsEnabled(true);
 
   document.getElementById('bulkDetailsSheet').classList.add('open');
+}
+
+let _autoUploadTimer = null;
+
+function onBdRouteChange() {
+  // Route select කළාම pending upload ඇත්නම් දැනම start
+  if (_pendingAutoUploadFiles && serverOnline) {
+    clearTimeout(_autoUploadTimer);
+    _autoUploadTimer = null;
+    const files = _pendingAutoUploadFiles;
+    _pendingAutoUploadFiles = null;
+    setTimeout(() => autoServerUpload(files), 300);
+  }
 }
 
 function closeBulkDetails() {
