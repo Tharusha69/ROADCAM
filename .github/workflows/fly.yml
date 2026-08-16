@@ -1,0 +1,23 @@
+name: Deploy to Fly.io
+
+on:
+  push:
+    branches:
+      - main  # ඔබ deploy කිරීමට බලාපොරොත්තු වන branch එක (eg: master/main)
+
+jobs:
+  deploy:
+    name: Deploy app
+    runs-on: ubuntu-latest
+    concurrency: deploy-group
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy to Fly
+        run: flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
