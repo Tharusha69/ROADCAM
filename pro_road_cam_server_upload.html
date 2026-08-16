@@ -265,7 +265,12 @@ input[type="date"].sfield{color-scheme:dark;color:#fff}
 .route-item-sel .route-item-name{color:var(--g)}
 .route-del-btn{background:rgba(239,68,68,0.15);border:none;color:#ef4444;width:26px;height:26px;border-radius:50%;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .route-pick-btn{background:rgba(0,217,126,0.12);border:1px solid rgba(0,217,126,0.3);color:var(--g);padding:5px 10px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap}
-
+.assign-photo-item{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;cursor:pointer;border:2px solid transparent;transition:border-color 0.2s}
+.assign-photo-item.selected{border-color:var(--g)}
+.assign-photo-item img{width:100%;height:100%;object-fit:cover}
+.assign-photo-check{position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,0.5);border:2px solid rgba(255,255,255,0.5);display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff}
+.assign-photo-item.selected .assign-photo-check{background:var(--g);border-color:var(--g);color:#000}
+.assign-photo-date{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.6);font-size:8px;color:rgba(255,255,255,0.8);padding:2px 4px;text-align:center}
 </style>
 </head>
 <body>
@@ -766,11 +771,74 @@ input[type="date"].sfield{color-scheme:dark;color:#fff}
       <span class="sheet-title">📍 Manage Routes</span>
       <button class="close-btn" onclick="closeRoutesSheet()">✕</button>
     </div>
-    <div style="display:flex;gap:8px;margin-bottom:12px">
-      <input type="text" id="newRouteName" class="sfield" placeholder="e.g. PITIGALA TOWN - NIYAGAMA ROAD" style="flex:1;text-transform:uppercase">
-      <button onclick="addRoute()" style="background:var(--g);color:#000;border:none;border-radius:10px;padding:10px 16px;font-weight:800;font-size:11px;cursor:pointer;white-space:nowrap">+ ADD</button>
+
+    <!-- Mode tabs -->
+    <div style="display:flex;gap:6px;margin-bottom:14px">
+      <button id="routeTabManage" onclick="switchRouteTab('manage')"
+        style="flex:1;padding:8px;border-radius:8px;border:none;font-size:10px;font-weight:800;cursor:pointer;background:var(--g);color:#000">
+        📋 Manage
+      </button>
+      <button id="routeTabAssign" onclick="switchRouteTab('assign')"
+        style="flex:1;padding:8px;border-radius:8px;border:none;font-size:10px;font-weight:800;cursor:pointer;background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.6)">
+        🖼 Assign to Photos
+      </button>
     </div>
-    <div id="routesList" style="display:flex;flex-direction:column;gap:6px;max-height:60vh;overflow-y:auto"></div>
+
+    <!-- MANAGE TAB -->
+    <div id="routePanelManage">
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <input type="text" id="newRouteName" class="sfield"
+          placeholder="e.g. PITIGALA TOWN - NIYAGAMA ROAD"
+          style="flex:1;text-transform:uppercase"
+          onkeydown="if(event.key==='Enter') addRoute()">
+        <button onclick="addRoute()"
+          style="background:var(--g);color:#000;border:none;border-radius:10px;padding:10px 16px;font-weight:800;font-size:11px;cursor:pointer;white-space:nowrap">
+          + ADD
+        </button>
+      </div>
+      <div id="routesList" style="display:flex;flex-direction:column;gap:6px;max-height:55vh;overflow-y:auto"></div>
+    </div>
+
+    <!-- ASSIGN TAB -->
+    <div id="routePanelAssign" style="display:none">
+      <div class="rs-section" style="margin-top:0">
+        <div class="rs-section-title">Select Route</div>
+        <select id="assignRouteSelect" class="sfield">
+          <option value="">-- Pick a route --</option>
+        </select>
+      </div>
+      <div class="rs-section">
+        <div class="rs-section-title">Filter Photos to Assign</div>
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <input type="date" id="assignDateFilter" class="sfield" style="flex:1" onchange="loadAssignPhotos()">
+          <button onclick="document.getElementById('assignDateFilter').value='';loadAssignPhotos()"
+            style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:#fff;border-radius:8px;padding:0 10px;font-size:11px;cursor:pointer">
+            Clear
+          </button>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <button onclick="assignSelectAll()"
+            style="flex:1;padding:7px;background:rgba(0,217,126,0.1);border:1px solid rgba(0,217,126,0.3);color:var(--g);border-radius:8px;font-size:10px;font-weight:700;cursor:pointer">
+            Select All
+          </button>
+          <button onclick="assignSelectNone()"
+            style="flex:1;padding:7px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.6);border-radius:8px;font-size:10px;font-weight:700;cursor:pointer">
+            Deselect All
+          </button>
+        </div>
+        <div id="assignPhotoGrid"
+          style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-height:40vh;overflow-y:auto">
+        </div>
+        <div id="assignEmpty" style="display:none;text-align:center;color:rgba(255,255,255,0.3);font-size:12px;padding:20px">
+          No photos found
+        </div>
+      </div>
+      <button onclick="applyRouteToPhotos()"
+        style="width:100%;margin-top:12px;padding:13px;background:var(--g);color:#000;border:none;border-radius:12px;font-size:12px;font-weight:800;cursor:pointer;text-transform:uppercase;letter-spacing:1px">
+        ✅ Assign Route to Selected Photos
+      </button>
+    </div>
+
   </div>
 </div>
 <!-- STATUS TOAST -->
@@ -1611,7 +1679,96 @@ async function openRoutesSheet() {
 function closeRoutesSheet() {
   document.getElementById('routesSheet').classList.remove('open');
 }
+let assignSelectedIds = new Set();
+let assignAllPhotos   = [];
 
+function switchRouteTab(tab) {
+  const isManage = tab === 'manage';
+  document.getElementById('routePanelManage').style.display = isManage ? 'block' : 'none';
+  document.getElementById('routePanelAssign').style.display = isManage ? 'none'  : 'block';
+  document.getElementById('routeTabManage').style.background = isManage ? 'var(--g)' : 'rgba(255,255,255,0.07)';
+  document.getElementById('routeTabManage').style.color      = isManage ? '#000' : 'rgba(255,255,255,0.6)';
+  document.getElementById('routeTabAssign').style.background = isManage ? 'rgba(255,255,255,0.07)' : 'var(--g)';
+  document.getElementById('routeTabAssign').style.color      = isManage ? 'rgba(255,255,255,0.6)' : '#000';
+  if (!isManage) loadAssignPhotos();
+}
+
+async function loadAssignPhotos() {
+  const dateVal = document.getElementById('assignDateFilter').value;
+  const url     = SERVER + '/api/photos' + (dateVal ? '?date=' + dateVal : '');
+  try {
+    const r = await fetch(url);
+    assignAllPhotos = await r.json();
+    assignSelectedIds.clear();
+    renderAssignGrid();
+    // Populate route select
+    const sel = document.getElementById('assignRouteSelect');
+    sel.innerHTML = '<option value="">-- Pick a route --</option>';
+    allRoutes.forEach(rt => {
+      const opt = document.createElement('option');
+      opt.value = rt.name; opt.textContent = rt.name;
+      sel.appendChild(opt);
+    });
+  } catch(e) { showStatus('❌ Could not load photos', 'error'); }
+}
+
+function renderAssignGrid() {
+  const grid  = document.getElementById('assignPhotoGrid');
+  const empty = document.getElementById('assignEmpty');
+  grid.innerHTML = '';
+  if (!assignAllPhotos.length) {
+    empty.style.display = 'block'; return;
+  }
+  empty.style.display = 'none';
+  assignAllPhotos.forEach(photo => {
+    const el = document.createElement('div');
+    el.className = 'assign-photo-item' + (assignSelectedIds.has(photo.id) ? ' selected' : '');
+    el.innerHTML = `
+      <img src="${SERVER}${photo.filepath}" loading="lazy">
+      <div class="assign-photo-check">✓</div>
+      <div class="assign-photo-date">${photo.date}</div>
+    `;
+    el.onclick = () => {
+      if (assignSelectedIds.has(photo.id)) assignSelectedIds.delete(photo.id);
+      else assignSelectedIds.add(photo.id);
+      el.classList.toggle('selected');
+      el.querySelector('.assign-photo-check').style.background =
+        assignSelectedIds.has(photo.id) ? 'var(--g)' : 'rgba(0,0,0,0.5)';
+    };
+    grid.appendChild(el);
+  });
+}
+
+function assignSelectAll()  {
+  assignAllPhotos.forEach(p => assignSelectedIds.add(p.id));
+  renderAssignGrid();
+}
+function assignSelectNone() {
+  assignSelectedIds.clear();
+  renderAssignGrid();
+}
+
+async function applyRouteToPhotos() {
+  const route = document.getElementById('assignRouteSelect').value;
+  if (!route) { showStatus('⚠️ Select a route first', 'info'); return; }
+  if (!assignSelectedIds.size) { showStatus('⚠️ Select photos first', 'info'); return; }
+  try {
+    const r = await fetch(SERVER + '/api/photos/bulk/location', {
+      method: 'PATCH',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ ids: [...assignSelectedIds], location: route })
+    });
+    const d = await r.json();
+    if (d.success) {
+      showStatus('✅ Route assigned to ' + d.updated + ' photo(s)!');
+      assignSelectedIds.clear();
+      await loadAssignPhotos();
+      loadAlbum();
+    } else {
+      showStatus('❌ ' + (d.error || 'Failed'), 'error');
+    }
+  } catch(e) { showStatus('❌ Error', 'error'); }
+}
 async function loadRoutes() {
   try {
     const r = await fetch(SERVER + '/api/routes');
