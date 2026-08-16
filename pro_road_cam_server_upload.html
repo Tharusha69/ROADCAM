@@ -448,7 +448,8 @@ input[type="date"].sfield{color-scheme:dark;color:#fff}
     <button class="filter-btn active" onclick="filterAlbum(this,'all')">All</button>
     <button class="filter-btn" onclick="filterAlbum(this,'poster')">📸 Poster</button>
     <button class="filter-btn" onclick="filterAlbum(this,'self')">🤳 Self</button>
-    <input type="date" id="filterDate" class="sfield" style="flex:1;max-width:180px;height:32px;padding:6px 10px;font-size:11px" onchange="renderAlbum()">
+    <input type="date" id="filterDate" class="sfield" style="flex:1;max-width:140px;height:32px;padding:6px 10px;font-size:11px" onchange="renderAlbum()">
+    <input type="text" id="filterRoute" class="sfield" placeholder="🔍 Route…" style="flex:1;max-width:140px;height:32px;padding:6px 10px;font-size:11px" oninput="renderAlbum()">
     <div class="view-toggle">
       <button class="view-btn active" onclick="switchView(this,'grid')">⊞</button>
       <button class="view-btn" onclick="switchView(this,'list')">☰</button>
@@ -1103,11 +1104,9 @@ bulkInput.onchange = async e => {
   bulkInput.value = '';
   if (!files.length) return;
 
+  openBulkDetailsSheet(files);
   if (serverOnline) {
-    openBulkDetailsSheet(files);
-    autoServerUpload(files); // runs in background, sheet stays open
-  } else {
-    openBulkDetailsSheet(files);
+    autoServerUpload(files);
   }
 };
 
@@ -1276,6 +1275,8 @@ async function executeBulk(action) {
     showStatus(errors > 0
       ? '⚠️ Saved ' + doneCount + '/' + n + ' (' + errors + ' failed)'
       : '⬇️ Saved ' + doneCount + ' photo(s) to device!');
+    progressWrap.style.display = 'none';
+    setBdActionBtnsEnabled(true);
     await new Promise(r => setTimeout(r, 800));
     closeBulkDetails();
   } else {
@@ -1283,12 +1284,14 @@ async function executeBulk(action) {
     if (stampedFiles.length === 0) {
       showStatus('❌ No photos could be processed', 'error');
       setBdActionBtnsEnabled(true);
+      progressWrap.style.display = 'none';
       return;
     }
     if (errors > 0) showStatus('⚠️ ' + errors + ' failed, sharing ' + stampedFiles.length, 'info', 4000);
-    closeBulkDetails();
-    await shareFiles(stampedFiles, 'Road Cam Photos');
-    if (!CAN_SHARE_FILES) await downloadFiles(stampedFiles);
+    const shared = await shareFiles(stampedFiles, 'Road Cam Photos');
+    if (!shared) await downloadFiles(stampedFiles);
+    progressWrap.style.display = 'none';
+    setBdActionBtnsEnabled(true);
   }
 }
 
@@ -1581,10 +1584,12 @@ function renderAlbum() {
   const empty = document.getElementById('albumEmpty');
   grid.innerHTML = ''; list.innerHTML = '';
 
-  const dateFilter = document.getElementById('filterDate').value;
-  filteredPhotos   = albumPhotos.filter(p => {
+  const dateFilter  = document.getElementById('filterDate').value;
+  const routeFilter = (document.getElementById('filterRoute').value || '').toLowerCase().trim();
+  filteredPhotos    = albumPhotos.filter(p => {
     if (currentFilter !== 'all' && p.type !== currentFilter) return false;
     if (dateFilter && p.date !== dateFilter) return false;
+    if (routeFilter && !(p.location || '').toLowerCase().includes(routeFilter)) return false;
     return true;
   });
 
@@ -2191,7 +2196,10 @@ function duClear() {
   document.getElementById('duProgressFill').style.width  = '0%';
 }
 // ─── AUTO SERVER UPLOAD (Bulk, no sheet) ──────────────────
+let _autoUploadRunning = false;
 async function autoServerUpload(files) {
+  if (_autoUploadRunning) return;
+  _autoUploadRunning = true;
   const now      = new Date();
   const road     = document.getElementById('manualRoad').value || gpsRoad || 'Unknown Road';
   const town     = document.getElementById('manualTown').value || gpsTown;
@@ -2262,7 +2270,7 @@ async function autoServerUpload(files) {
     : '⚠️ Uploaded ' + done + '/' + files.length + ' (' + (files.length - done) + ' failed)',
     done < files.length ? 'info' : 'success');
 
-  // Do NOT auto-close — let user Save / Share / edit details freely
+  _autoUploadRunning = false;
 }
 
 initApp();
