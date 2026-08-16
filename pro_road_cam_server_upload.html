@@ -615,8 +615,12 @@ input[type="date"].sfield{color-scheme:dark;color:#fff}
         <div class="photo-type-opt sel" onclick="setBdType(this,'poster')">📸 Poster Photo</div>
         <div class="photo-type-opt" onclick="setBdType(this,'self')">🤳 Self Photo</div>
       </div>
+      <span class="field-label">Route</span>
+      <select id="duRoute" class="sfield" style="margin-bottom:4px">
+        <option value="">-- Select Route (optional) --</option>
+      </select>
       <span class="field-label">Road Name</span>
-      <input type="text" id="bdRoad" class="sfield" placeholder="Road Name">
+      <input type="text" id="duRoad" class="sfield" placeholder="Road Name">
       <span class="field-label">Town / City &amp; Province</span>
       <div class="row2">
         <input type="text" id="bdTown" class="sfield" placeholder="Town / City">
@@ -802,11 +806,26 @@ input[type="date"].sfield{color-scheme:dark;color:#fff}
     <!-- ASSIGN TAB -->
     <div id="routePanelAssign" style="display:none">
       <div class="rs-section" style="margin-top:0">
-        <div class="rs-section-title">Select Route</div>
-        <select id="assignRouteSelect" class="sfield">
+        <div class="rs-section-title">Select Route to Assign</div>
+        <select id="assignRouteSelect" class="sfield" style="margin-bottom:10px">
           <option value="">-- Pick a route --</option>
         </select>
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <input type="date" id="assignDateFilter" class="sfield" style="flex:1">
+          <button onclick="document.getElementById('assignDateFilter').value=''"
+            style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:#fff;border-radius:8px;padding:0 10px;font-size:11px;cursor:pointer">
+            Clear
+          </button>
+        </div>
+        <div style="font-size:9px;color:rgba(255,255,255,0.4);margin-bottom:12px">
+          ⊙ Date filter optional — blank = assign to ALL photos
+        </div>
       </div>
+      <button onclick="applyRouteToPhotos()"
+        style="width:100%;margin-top:4px;padding:13px;background:var(--g);color:#000;border:none;border-radius:12px;font-size:12px;font-weight:800;cursor:pointer;text-transform:uppercase;letter-spacing:1px">
+        ✅ Assign Route to Photos
+      </button>
+    </div>
       <div class="rs-section">
         <div class="rs-section-title">Filter Photos to Assign</div>
         <div style="display:flex;gap:8px;margin-bottom:10px">
@@ -1641,7 +1660,7 @@ document.getElementById('uploadServerBtn').onclick = async () => {
   await uploadToServer(originalBlob);
   closePreview();
 };
-
+const r   = await fetch(url);
 // ─── ALBUM ────────────────────────────────────────────────
 async function loadAlbum() {
   document.getElementById('albumLoading').style.display = 'block';
@@ -1674,6 +1693,7 @@ let allRoutes = [];
 
 async function openRoutesSheet() {
   await loadRoutes();
+  populateRouteSelects();
   document.getElementById('routesSheet').classList.add('open');
 }
 function closeRoutesSheet() {
@@ -1751,19 +1771,24 @@ function assignSelectNone() {
 async function applyRouteToPhotos() {
   const route = document.getElementById('assignRouteSelect').value;
   if (!route) { showStatus('⚠️ Select a route first', 'info'); return; }
-  if (!assignSelectedIds.size) { showStatus('⚠️ Select photos first', 'info'); return; }
+  const dateVal = document.getElementById('assignDateFilter').value;
   try {
-    const r = await fetch(SERVER + '/api/photos/bulk/location', {
+    // Date filter ඇත්නම් ඒ date photos, නැත්නම් all photos
+    const url = SERVER + '/api/photos' + (dateVal ? '?date=' + dateVal : '');
+    const r2  = await fetch(url);
+    const photos = await r2.json();
+    if (!photos.length) { showStatus('⚠️ No photos found', 'info'); return; }
+    const ids = photos.map(p => p.id);
+    const r = await fetch(SERVER + '/api/photos/bulk/route', {
       method: 'PATCH',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ ids: [...assignSelectedIds], location: route })
+      body: JSON.stringify({ ids, route })
     });
     const d = await r.json();
     if (d.success) {
       showStatus('✅ Route assigned to ' + d.updated + ' photo(s)!');
-      assignSelectedIds.clear();
-      await loadAssignPhotos();
       loadAlbum();
+      closeRoutesSheet();
     } else {
       showStatus('❌ ' + (d.error || 'Failed'), 'error');
     }
@@ -1774,7 +1799,24 @@ async function loadRoutes() {
     const r = await fetch(SERVER + '/api/routes');
     allRoutes = await r.json();
     renderRoutesList();
+    populateRouteSelects();
   } catch(e) { showStatus('❌ Could not load routes', 'error'); }
+}
+
+function populateRouteSelects() {
+  const ids = ['bdRoute', 'duRoute', 'assignRouteSelect'];
+  ids.forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">-- Select Route (optional) --</option>';
+    allRoutes.forEach(rt => {
+      const opt = document.createElement('option');
+      opt.value = rt.name; opt.textContent = rt.name;
+      if (rt.name === cur) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  });
 }
 
 function renderRoutesList() {
@@ -1857,7 +1899,7 @@ function renderAlbum() {
   filteredPhotos    = albumPhotos.filter(p => {
     if (currentFilter !== 'all' && p.type !== currentFilter) return false;
     if (dateFilter && p.date !== dateFilter) return false;
-    if (routeFilter && !(p.location || '').toLowerCase().includes(routeFilter)) return false;
+    if (routeFilter && !(p.route || '').toLowerCase().includes(routeFilter)) return false;
     return true;
   });
 
@@ -2430,6 +2472,7 @@ async function duStartUpload() {
       fd.append('time',      times[i]);
       fd.append('timestamp', now.toLocaleString());
       fd.append('location',  location);
+      fd.append('route',     document.getElementById('duRoute').value || '');
       fd.append('device',    device);
 
       const r = await fetch(SERVER + '/api/upload', {method:'POST', body:fd});
@@ -2516,12 +2559,13 @@ async function autoServerUpload(files) {
       const blob  = await new Promise(res => tempCanvas.toBlob(res, 'image/jpeg', quality));
       const fname = 'bulk_' + Date.now() + '_' + i + '.jpg';
       const fd    = new FormData();
-      fd.append('photo',     new File([blob], fname, {type:'image/jpeg'}));
-      fd.append('type',      currentPhotoType);
-      fd.append('date',      isoDate);
+      fd.append('photo', new File([blob], fname, {type:'image/jpeg'}));
+      fd.append('type',      duType);
+      fd.append('date',      isoDate || now.toISOString().split('T')[0]);
       fd.append('time',      times[i]);
       fd.append('timestamp', now.toLocaleString());
       fd.append('location',  location);
+      fd.append('route',     document.getElementById('duRoute').value || '');
       fd.append('device',    device);
 
       const r = await fetch(SERVER + '/api/upload', {method:'POST', body:fd});
