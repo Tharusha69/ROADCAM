@@ -1523,7 +1523,7 @@ async function uploadToServer(blob, originalFileObj = null) {
   const dateVal  = document.getElementById('manualDate').value || formatDateISO(now);
 
   const fd         = new FormData();
-  const uploadBlob = originalFileObj || blob;
+  const uploadBlob = originalBlob || originalFileObj || blob;
   const fileName   = 'roadcam_' + Date.now() + '.jpg';
   fd.append('photo', uploadBlob instanceof File ? uploadBlob : new File([uploadBlob], fileName, {type:'image/jpeg'}), fileName);
   fd.append('type',      currentPhotoType);
@@ -2477,11 +2477,11 @@ async function duStartUpload() {
         coords: gpsCoords, device: device
       });
 
-      const blob  = await new Promise(res => canvas.toBlob(res, 'image/jpeg', quality));
+      const origBlob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 1.0));
       const now   = new Date();
       const fd    = new FormData();
       const fname = 'du_' + Date.now() + '.jpg';
-      fd.append('photo', new File([blob], fname, {type:'image/jpeg'}));
+      fd.append('photo', new File([origBlob], fname, {type:'image/jpeg'}));
       fd.append('type',      duType);
       fd.append('date',      isoDate || now.toISOString().split('T')[0]);
       fd.append('time',      times[i]);
@@ -2571,10 +2571,14 @@ async function autoServerUpload(files) {
         coords: gpsCoords, device
       });
 
-      const blob  = await new Promise(res => tempCanvas.toBlob(res, 'image/jpeg', quality));
+      // Original (no overlay) save කරන්න වෙනම canvas
+      const origCanvas = document.createElement('canvas');
+      origCanvas.width = tw; origCanvas.height = th;
+      origCanvas.getContext('2d').drawImage(img, 0, 0, tw, th);
+      const origBlob = await new Promise(res => origCanvas.toBlob(res, 'image/jpeg', 1.0));
       const fname = 'bulk_' + Date.now() + '_' + i + '.jpg';
       const fd    = new FormData();
-      fd.append('photo', new File([blob], fname, {type:'image/jpeg'}));
+      fd.append('photo', new File([origBlob], fname, {type:'image/jpeg'}));
       fd.append('type',      duType);
       fd.append('date',      isoDate || now.toISOString().split('T')[0]);
       fd.append('time',      times[i]);
