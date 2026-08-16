@@ -259,6 +259,13 @@ input[type="date"].sfield{color-scheme:dark;color:#fff}
 .save-inner{background:#030a06;border:1px solid rgba(0,217,126,0.3);border-radius:24px 24px 0 0;width:100%;max-width:600px;padding:20px 20px 28px}
 .save-title{font-size:14px;font-weight:800;color:var(--g);text-transform:uppercase;letter-spacing:0.8px;text-align:center}
 .save-sub{font-size:11px;color:rgba(255,255,255,0.5);text-align:center;margin-top:6px;line-height:1.5}
+.route-item{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 12px}
+.route-item-name{flex:1;font-size:11px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:0.3px}
+.route-item-sel{background:rgba(0,217,126,0.15);border-color:var(--g)}
+.route-item-sel .route-item-name{color:var(--g)}
+.route-del-btn{background:rgba(239,68,68,0.15);border:none;color:#ef4444;width:26px;height:26px;border-radius:50%;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.route-pick-btn{background:rgba(0,217,126,0.12);border:1px solid rgba(0,217,126,0.3);color:var(--g);padding:5px 10px;border-radius:6px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap}
+
 </style>
 </head>
 <body>
@@ -448,9 +455,13 @@ input[type="date"].sfield{color-scheme:dark;color:#fff}
     <button class="filter-btn active" onclick="filterAlbum(this,'all')">All</button>
     <button class="filter-btn" onclick="filterAlbum(this,'poster')">📸 Poster</button>
     <button class="filter-btn" onclick="filterAlbum(this,'self')">🤳 Self</button>
-    <input type="date" id="filterDate" class="sfield" style="flex:1;max-width:140px;height:32px;padding:6px 10px;font-size:11px" onchange="renderAlbum()">
-    <input type="text" id="filterRoute" class="sfield" placeholder="🔍 Route…" style="flex:1;max-width:140px;height:32px;padding:6px 10px;font-size:11px" oninput="renderAlbum()">
-    <div class="view-toggle">
+    <input type="date" id="filterDate" class="sfield" style="flex:1;max-width:130px;height:32px;padding:6px 10px;font-size:11px" onchange="loadAlbum()">
+    <div style="display:flex;gap:4px;flex:1;min-width:0">
+      <input type="text" id="filterRoute" class="sfield" placeholder="🔍 Route…" style="flex:1;height:32px;padding:6px 10px;font-size:11px" oninput="debounceLoad()" readonly>
+      <button onclick="openRoutesSheet()" style="background:rgba(0,217,126,0.15);border:1px solid rgba(0,217,126,0.3);color:var(--g);border-radius:8px;padding:0 10px;font-size:14px;cursor:pointer;white-space:nowrap;height:32px">📍</button>
+    </div>
+    
+      <div class="view-toggle">
       <button class="view-btn active" onclick="switchView(this,'grid')">⊞</button>
       <button class="view-btn" onclick="switchView(this,'list')">☰</button>
     </div>
@@ -747,7 +758,21 @@ input[type="date"].sfield{color-scheme:dark;color:#fff}
     <button class="du-clear-btn" style="width:100%;margin-top:8px" onclick="cancelPendingSave()">Cancel</button>
   </div>
 </div>
-
+<!-- ROUTES MANAGER SHEET -->
+<div class="restamp-sheet" id="routesSheet">
+  <div class="restamp-inner">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <span class="sheet-title">📍 Manage Routes</span>
+      <button class="close-btn" onclick="closeRoutesSheet()">✕</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <input type="text" id="newRouteName" class="sfield" placeholder="e.g. PITIGALA TOWN - NIYAGAMA ROAD" style="flex:1;text-transform:uppercase">
+      <button onclick="addRoute()" style="background:var(--g);color:#000;border:none;border-radius:10px;padding:10px 16px;font-weight:800;font-size:11px;cursor:pointer;white-space:nowrap">+ ADD</button>
+    </div>
+    <div id="routesList" style="display:flex;flex-direction:column;gap:6px;max-height:60vh;overflow-y:auto"></div>
+  </div>
+</div>
 <!-- STATUS TOAST -->
 <div class="upload-status" id="uploadStatus"></div>
 
@@ -1576,7 +1601,93 @@ function openAlbum() {
   loadAlbum();
 }
 function closeAlbum() { document.getElementById('albumOverlay').style.display = 'none'; }
+// ─── ROUTES MANAGER ───────────────────────────────────────
+let allRoutes = [];
 
+async function openRoutesSheet() {
+  await loadRoutes();
+  document.getElementById('routesSheet').classList.add('open');
+}
+function closeRoutesSheet() {
+  document.getElementById('routesSheet').classList.remove('open');
+}
+
+async function loadRoutes() {
+  try {
+    const r = await fetch(SERVER + '/api/routes');
+    allRoutes = await r.json();
+    renderRoutesList();
+  } catch(e) { showStatus('❌ Could not load routes', 'error'); }
+}
+
+function renderRoutesList() {
+  const container = document.getElementById('routesList');
+  const current   = document.getElementById('filterRoute').value;
+  container.innerHTML = '';
+
+  if (!allRoutes.length) {
+    container.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.3);font-size:12px;padding:20px">No routes yet. Add one above.</div>';
+    return;
+  }
+
+  // Clear filter option
+  if (current) {
+    const clearEl = document.createElement('div');
+    clearEl.style.cssText = 'text-align:center;margin-bottom:6px';
+    clearEl.innerHTML = `<button onclick="selectRoute('')" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#ef4444;border-radius:8px;padding:6px 16px;font-size:10px;font-weight:700;cursor:pointer">✕ Clear Filter</button>`;
+    container.appendChild(clearEl);
+  }
+
+  allRoutes.forEach(route => {
+    const isSelected = current === route.name;
+    const el = document.createElement('div');
+    el.className = 'route-item' + (isSelected ? ' route-item-sel' : '');
+    el.innerHTML = `
+      <span class="route-item-name">${route.name}</span>
+      <button class="route-pick-btn" onclick="selectRoute('${route.name.replace(/'/g,"\\'")}')">
+        ${isSelected ? '✓ Selected' : 'Select'}
+      </button>
+      <button class="route-del-btn" onclick="deleteRoute(${route.id})">✕</button>
+    `;
+    container.appendChild(el);
+  });
+}
+
+function selectRoute(name) {
+  document.getElementById('filterRoute').value = name;
+  closeRoutesSheet();
+  loadAlbum();
+}
+
+async function addRoute() {
+  const input = document.getElementById('newRouteName');
+  const name  = input.value.trim().toUpperCase();
+  if (!name) { showStatus('⚠️ Enter a route name', 'info'); return; }
+  try {
+    const r = await fetch(SERVER + '/api/routes', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({name})
+    });
+    const d = await r.json();
+    if (d.success) {
+      input.value = '';
+      await loadRoutes();
+      showStatus('✅ Route added!');
+    } else {
+      showStatus('⚠️ ' + (d.error || 'Failed'), 'info');
+    }
+  } catch(e) { showStatus('❌ Error adding route', 'error'); }
+}
+
+async function deleteRoute(id) {
+  if (!confirm('Delete this route?')) return;
+  try {
+    await fetch(SERVER + '/api/routes/' + id, {method:'DELETE'});
+    await loadRoutes();
+    showStatus('🗑 Route deleted');
+  } catch(e) { showStatus('❌ Error', 'error'); }
+}
 function renderAlbum() {
   document.getElementById('albumLoading').style.display = 'none';
   const grid  = document.getElementById('albumGrid');
