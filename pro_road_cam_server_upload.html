@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Pro Road Cam v8.5</title>
+<title>Pro Road Cam v8.6</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
@@ -147,12 +147,7 @@ input[type="date"].sfield{color-scheme:dark;color:#fff}
 .db-btn:hover{background:rgba(255,255,255,0.14)}
 .db-btn.danger{background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.3);color:#ef4444}
 
-/* ═══════════════════════════════════════════════
-   RE-STAMP SHEET — REDESIGNED v8.5
-   ─────────────────────────────────────────────
-   Now matches the Direct-Upload sheet in layout.
-   Single path: fill details → choose action.
-   ═══════════════════════════════════════════════ */
+/* RE-STAMP SHEET */
 .restamp-sheet{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:300;display:none;align-items:flex-end;justify-content:center}
 .restamp-sheet.open{display:flex}
 .restamp-inner{background:#030a06;border:1px solid rgba(0,217,126,0.3);border-radius:24px 24px 0 0;width:100%;max-width:600px;padding:20px;max-height:88vh;overflow-y:auto;display:flex;flex-direction:column;gap:0}
@@ -160,17 +155,14 @@ input[type="date"].sfield{color-scheme:dark;color:#fff}
 .restamp-multi-preview{display:flex;gap:6px;overflow-x:auto;margin-bottom:16px;padding-bottom:4px}
 .restamp-multi-preview img{width:70px;height:70px;border-radius:8px;object-fit:cover;flex-shrink:0;border:1px solid rgba(255,255,255,0.1)}
 
-/* Step indicator */
 .rs-steps{display:flex;gap:6px;margin-bottom:16px}
 .rs-step{flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,0.1);transition:background 0.3s}
 .rs-step.done{background:var(--g)}
 .rs-step.active{background:rgba(0,217,126,0.5)}
 
-/* Section divider inside sheet */
 .rs-section{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:14px;margin-top:12px}
 .rs-section-title{font-size:9px;font-weight:800;color:var(--g);letter-spacing:1px;text-transform:uppercase;margin-bottom:12px}
 
-/* Action row at bottom of restamp sheet */
 .rs-action-row{display:grid;gap:8px;margin-top:16px}
 .rs-action-row.dual{grid-template-columns:1fr 1fr}
 .rs-action-row.triple{grid-template-columns:1fr 1fr 1fr}
@@ -182,15 +174,47 @@ input[type="date"].sfield{color-scheme:dark;color:#fff}
 .rs-act-all{background:var(--g);color:#000;grid-column:1/-1}
 .rs-act-cancel{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.6);grid-column:1/-1;padding:11px}
 
-/* Progress row inside restamp */
 .rs-progress-wrap{display:none;margin-top:12px}
 .rs-progress-label{font-size:10px;color:rgba(255,255,255,0.5);margin-bottom:6px;text-align:center}
 .rs-progress-bar{height:5px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden}
 .rs-progress-fill{height:100%;background:var(--g);border-radius:3px;width:0%;transition:width 0.3s}
 
-/* AUTO-FILL BADGE */
 .autofill-badge{display:inline-flex;align-items:center;gap:4px;background:rgba(0,217,126,0.12);border:1px solid rgba(0,217,126,0.3);color:var(--g);padding:3px 8px;border-radius:6px;font-size:9px;font-weight:700;letter-spacing:0.5px;margin-bottom:10px}
 .autofill-badge span{font-size:11px}
+
+/* ════════════════════════════════════════
+   BULK DETAILS SHEET  (NEW in v8.6)
+   Opens immediately when user picks files
+   via the BULK button
+   ════════════════════════════════════════ */
+.bulk-details-sheet{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:350;display:none;align-items:flex-end;justify-content:center}
+.bulk-details-sheet.open{display:flex}
+.bulk-details-inner{background:#030a06;border:1px solid rgba(0,217,126,0.35);border-radius:24px 24px 0 0;width:100%;max-width:600px;padding:20px;max-height:90vh;overflow-y:auto}
+
+/* file count badge inside bulk sheet */
+.bd-count-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(0,217,126,0.12);border:1px solid rgba(0,217,126,0.3);border-radius:8px;padding:6px 12px;margin-bottom:14px;width:100%}
+.bd-count-icon{font-size:18px}
+.bd-count-text{font-size:12px;font-weight:700;color:#fff;flex:1}
+.bd-count-num{font-size:18px;font-weight:800;color:var(--g)}
+
+/* thumbnail strip */
+.bd-thumb-strip{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px}
+.bd-thumb{width:60px;height:60px;border-radius:8px;object-fit:cover;flex-shrink:0;border:1px solid rgba(255,255,255,0.1)}
+
+/* progress inside bulk sheet */
+.bd-progress-wrap{display:none;margin-top:12px}
+.bd-progress-label{font-size:11px;color:rgba(255,255,255,0.6);margin-bottom:6px;text-align:center;font-weight:600}
+.bd-progress-bar{height:6px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden}
+.bd-progress-fill{height:100%;background:var(--g);border-radius:3px;width:0%;transition:width 0.25s}
+
+/* dual action row */
+.bd-action-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.bd-act-btn{padding:14px 10px;border-radius:12px;border:none;font-size:12px;font-weight:800;cursor:pointer;text-transform:uppercase;letter-spacing:0.5px;transition:all 0.15s;display:flex;align-items:center;justify-content:center;gap:6px}
+.bd-act-btn:active{transform:scale(0.97)}
+.bd-act-btn:disabled{opacity:0.45;cursor:not-allowed;transform:none}
+.bd-act-save{background:#16a34a;color:#fff}
+.bd-act-share{background:#6366f1;color:#fff}
+.bd-act-cancel{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.6);grid-column:1/-1;padding:11px;font-size:11px}
 
 /* UPLOAD STATUS */
 .upload-status{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:rgba(0,217,126,0.95);color:#000;padding:12px 20px;border-radius:10px;font-size:11px;font-weight:800;z-index:999;display:none;align-items:center;gap:10px;white-space:nowrap;box-shadow:0 4px 20px rgba(0,217,126,0.3)}
@@ -370,6 +394,7 @@ input[type="date"].sfield{color-scheme:dark;color:#fff}
   </div>
   <button id="shutter" onclick="takeSnapshot()"></button>
   <div class="side-btns">
+    <!-- BULK: now triggers openBulkDetailsSheet via onchange -->
     <input type="file" id="bulkInput" accept="image/*" multiple>
     <label for="bulkInput" class="bulk-label">Bulk</label>
     <div class="icon-btn" id="flashBtn" onclick="toggleFlash()" title="Flash">⚡</div>
@@ -444,10 +469,7 @@ input[type="date"].sfield{color-scheme:dark;color:#fff}
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════
-     RE-STAMP SHEET — v8.5  (unified single / bulk)
-     Flow: fill details → pick action (Save / Share / Server)
-     ═══════════════════════════════════════════════════════ -->
+<!-- RE-STAMP SHEET -->
 <div class="restamp-sheet" id="restampSheet">
   <div class="restamp-inner">
     <div class="sheet-handle"></div>
@@ -455,51 +477,35 @@ input[type="date"].sfield{color-scheme:dark;color:#fff}
       <span class="sheet-title" id="restampTitle">Re-stamp Photo</span>
       <button class="close-btn" onclick="closeRestamp()">✕</button>
     </div>
-
-    <!-- step dots -->
     <div class="rs-steps">
       <div class="rs-step done" id="rsStep1"></div>
       <div class="rs-step active" id="rsStep2"></div>
       <div class="rs-step" id="rsStep3"></div>
     </div>
-
     <div class="autofill-badge" id="autofillBadge">
       <span>⊙</span> Live GPS + Current Time Auto-filled
     </div>
-
-    <!-- previews -->
     <div id="restampPreviews"></div>
-
-    <!-- ── DETAILS SECTION ── -->
     <div class="rs-section">
       <div class="rs-section-title">📍 Details</div>
-
       <span class="field-label" style="margin-top:0">Photo Type</span>
       <div class="photo-type-row">
         <div class="photo-type-opt sel" onclick="setRestampType(this,'poster')">📸 Poster Photo</div>
         <div class="photo-type-opt" onclick="setRestampType(this,'self')">🤳 Self Photo</div>
       </div>
-
       <span class="field-label">Road Name</span>
       <input type="text" id="rsRoad" class="sfield" placeholder="Road Name">
-
       <span class="field-label">Town / City &amp; Province</span>
       <div class="row2">
         <input type="text" id="rsTown" class="sfield" placeholder="Town / City">
         <input type="text" id="rsProvince" class="sfield" placeholder="Province">
       </div>
     </div>
-
-    <!-- ── TIME SECTION ── -->
     <div class="rs-section">
       <div class="rs-section-title">🕐 Time</div>
-
-      <!-- Single photo time -->
       <div id="rsTimeRow">
         <input type="time" id="rsTime" class="sfield" placeholder="e.g. 09:30">
       </div>
-
-      <!-- Bulk time window -->
       <div id="rsBulkTimeRow" style="display:none">
         <div class="row2">
           <div>
@@ -516,11 +522,8 @@ input[type="date"].sfield{color-scheme:dark;color:#fff}
         </div>
       </div>
     </div>
-
-    <!-- ── DATE / DEVICE / THEME ── -->
     <div class="rs-section">
       <div class="rs-section-title">📅 Date &amp; Device</div>
-
       <div class="row2">
         <div style="flex:1">
           <span class="field-label" style="margin-top:0">Date</span>
@@ -531,7 +534,6 @@ input[type="date"].sfield{color-scheme:dark;color:#fff}
           <input type="text" id="rsDevice" class="sfield" placeholder="Device name">
         </div>
       </div>
-
       <div class="row2" style="margin-top:8px">
         <div style="flex:1">
           <span class="field-label" style="margin-top:0">Theme Color</span>
@@ -552,19 +554,122 @@ input[type="date"].sfield{color-scheme:dark;color:#fff}
         </div>
       </div>
     </div>
-
-    <!-- progress bar (shown during processing) -->
     <div class="rs-progress-wrap" id="rsProgressWrap">
       <div class="rs-progress-label" id="rsProgressLabel">Processing…</div>
       <div class="rs-progress-bar"><div class="rs-progress-fill" id="rsProgressFill"></div></div>
     </div>
-
-    <!-- ── ACTION ROW — fill in after details ── -->
     <div class="rs-action-row triple" id="rsActionRow">
       <button class="rs-act-btn rs-act-save"   onclick="applyRestamp('save')">⬇ Save</button>
       <button class="rs-act-btn rs-act-share"  onclick="applyRestamp('share')">↗ Share</button>
       <button class="rs-act-btn rs-act-server" onclick="applyRestamp('server')">⬆ Server</button>
       <button class="rs-act-btn rs-act-cancel" onclick="closeRestamp()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════
+     BULK DETAILS SHEET  — v8.6
+     Opened immediately when user taps BULK and picks files.
+     Shows thumbnails + details form + Save / Share actions.
+     ════════════════════════════════════════════════════ -->
+<div class="bulk-details-sheet" id="bulkDetailsSheet">
+  <div class="bulk-details-inner">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <span class="sheet-title" id="bdTitle">Bulk — Add Details</span>
+      <button class="close-btn" onclick="closeBulkDetails()">✕</button>
+    </div>
+
+    <!-- file count badge -->
+    <div class="bd-count-badge">
+      <span class="bd-count-icon">🖼</span>
+      <span class="bd-count-text">Photos selected</span>
+      <span class="bd-count-num" id="bdCountNum">0</span>
+    </div>
+
+    <!-- thumbnail strip (up to 8 shown) -->
+    <div class="bd-thumb-strip" id="bdThumbStrip"></div>
+
+    <!-- ── DETAILS SECTION ── -->
+    <div class="rs-section">
+      <div class="rs-section-title">📍 Details</div>
+      <span class="field-label" style="margin-top:0">Photo Type</span>
+      <div class="photo-type-row" id="bdPhotoTypeRow">
+        <div class="photo-type-opt sel" onclick="setBdType(this,'poster')">📸 Poster Photo</div>
+        <div class="photo-type-opt" onclick="setBdType(this,'self')">🤳 Self Photo</div>
+      </div>
+      <span class="field-label">Road Name</span>
+      <input type="text" id="bdRoad" class="sfield" placeholder="Road Name">
+      <span class="field-label">Town / City &amp; Province</span>
+      <div class="row2">
+        <input type="text" id="bdTown" class="sfield" placeholder="Town / City">
+        <input type="text" id="bdProvince" class="sfield" placeholder="Province">
+      </div>
+    </div>
+
+    <!-- ── TIME SECTION ── -->
+    <div class="rs-section">
+      <div class="rs-section-title">🕐 Time Window</div>
+      <div class="row2">
+        <div>
+          <span class="field-label" style="margin-top:0">Start Time</span>
+          <input type="time" id="bdTimeStart" class="sfield" value="09:00">
+        </div>
+        <div>
+          <span class="field-label" style="margin-top:0">End Time</span>
+          <input type="time" id="bdTimeEnd" class="sfield">
+        </div>
+      </div>
+      <div style="font-size:9px;color:rgba(255,255,255,0.4);margin-top:6px">
+        ⊙ Each photo gets a random time within this window
+      </div>
+    </div>
+
+    <!-- ── DATE / DEVICE / THEME ── -->
+    <div class="rs-section">
+      <div class="rs-section-title">📅 Date &amp; Device</div>
+      <div class="row2">
+        <div style="flex:1">
+          <span class="field-label" style="margin-top:0">Date</span>
+          <input type="date" id="bdDate" class="sfield">
+        </div>
+        <div style="flex:1">
+          <span class="field-label" style="margin-top:0">Device</span>
+          <input type="text" id="bdDevice" class="sfield" placeholder="Device name">
+        </div>
+      </div>
+      <div class="row2" style="margin-top:8px">
+        <div style="flex:1">
+          <span class="field-label" style="margin-top:0">Theme Color</span>
+          <select id="bdTheme" class="sfield">
+            <option value="green">Green</option>
+            <option value="blue">Blue</option>
+            <option value="amber">Amber</option>
+            <option value="red">Red</option>
+            <option value="white">White</option>
+          </select>
+        </div>
+        <div style="flex:1">
+          <span class="field-label" style="margin-top:0">JPEG Quality</span>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:4px">
+            <input type="range" id="bdQuality" min="70" max="100" value="97" style="flex:1;accent-color:var(--g)">
+            <span id="bdQualityLabel" style="font-size:11px;color:var(--g);font-weight:700;min-width:30px">97%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- progress (shown while stamping) -->
+    <div class="bd-progress-wrap" id="bdProgressWrap">
+      <div class="bd-progress-label" id="bdProgressLabel">Processing 0 / 0…</div>
+      <div class="bd-progress-bar"><div class="bd-progress-fill" id="bdProgressFill"></div></div>
+    </div>
+
+    <!-- ── ACTIONS ── -->
+    <div class="bd-action-row" id="bdActionRow">
+      <button class="bd-act-btn bd-act-save"  id="bdSaveBtn"  onclick="executeBulk('save')">⬇ Save to Device</button>
+      <button class="bd-act-btn bd-act-share" id="bdShareBtn" onclick="executeBulk('share')">↗ Share</button>
+      <button class="bd-act-btn bd-act-cancel" onclick="closeBulkDetails()">Cancel</button>
     </div>
   </div>
 </div>
@@ -583,7 +688,6 @@ input[type="date"].sfield{color-scheme:dark;color:#fff}
       <div class="du-dropzone-sub">or drag &amp; drop here • JPG, PNG, HEIC</div>
     </div>
     <input type="file" id="duFileInput" accept="image/*" multiple onchange="duFilesChosen(event)">
-
     <div class="du-meta">
       <div class="du-meta-title">Photo Metadata</div>
       <span class="field-label" style="margin-top:0">Photo Type</span>
@@ -624,7 +728,6 @@ input[type="date"].sfield{color-scheme:dark;color:#fff}
         <div class="du-progress-fill" id="duProgressFill"></div>
       </div>
     </div>
-
     <div class="du-queue" id="duQueue"></div>
   </div>
   <div class="du-actions">
@@ -684,6 +787,10 @@ let isBulkRestamp    = false;
 
 let duFiles          = [];
 let duType           = 'poster';
+
+// BULK DETAILS state
+let bulkFiles        = [];  // Array of File objects from the BULK button
+let bdType           = 'poster';
 
 let autoReloadMins   = 0;
 let reloadSecsLeft   = 0;
@@ -854,6 +961,9 @@ document.getElementById('rsQuality').oninput = function() {
 document.getElementById('duQuality').oninput = function() {
   document.getElementById('duQualityLabel').textContent = this.value + '%';
 };
+document.getElementById('bdQuality').oninput = function() {
+  document.getElementById('bdQualityLabel').textContent = this.value + '%';
+};
 
 function getThemeColor() {
   return themeColors[document.getElementById('themeSelect').value] || '#00d97e';
@@ -959,48 +1069,192 @@ fileInput.onchange = e => {
   r.readAsDataURL(e.target.files[0]);
 };
 
-// ─── BULK INPUT ───────────────────────────────────────────
-bulkInput.onchange = async e => {
-  const files = e.target.files;
+// ─── BULK INPUT → opens Bulk Details Sheet ────────────────
+bulkInput.onchange = e => {
+  const files = Array.from(e.target.files || []);
+  bulkInput.value = '';
   if (!files.length) return;
-  const startTimeStr = document.getElementById('bulkStartTime').value || '09:00';
-  const [sh, sm]     = startTimeStr.split(':').map(Number);
-  const startMins    = sh * 60 + sm;
-  const now          = new Date();
-  const endMins      = now.getHours() * 60 + now.getMinutes();
-  let range          = endMins - startMins;
-  if (range < 0) range += 1440;
-  const n        = files.length;
-  const interval = n > 1 ? Math.floor(range / (n - 1)) : 0;
+  openBulkDetailsSheet(files);
+};
 
-  showStatus('⏳ Bulk uploading ' + n + ' photos…', 'info', 60000);
+// ═══════════════════════════════════════════════════════════
+//  BULK DETAILS SHEET  — open / close / type / execute
+// ═══════════════════════════════════════════════════════════
+function openBulkDetailsSheet(files) {
+  bulkFiles = files;
+  bdType    = 'poster';
+  const now = new Date();
+
+  // Reset type buttons
+  document.querySelectorAll('#bdPhotoTypeRow .photo-type-opt').forEach((el,i) => {
+    el.classList.toggle('sel', i === 0);
+  });
+
+  // Pre-fill from live settings
+  document.getElementById('bdRoad').value     = document.getElementById('manualRoad').value;
+  document.getElementById('bdTown').value     = document.getElementById('manualTown').value;
+  document.getElementById('bdProvince').value = document.getElementById('manualProvince').value;
+  document.getElementById('bdDate').value     = formatDateISO(now);
+  document.getElementById('bdTimeStart').value = '09:00';
+  document.getElementById('bdTimeEnd').value   = formatTime24(now);
+  document.getElementById('bdDevice').value   = currentDevice;
+  document.getElementById('bdQuality').value  = qualitySlider.value;
+  document.getElementById('bdQualityLabel').textContent = qualitySlider.value + '%';
+
+  // Count badge
+  document.getElementById('bdCountNum').textContent = files.length;
+  document.getElementById('bdTitle').textContent = 'Bulk — Add Details (' + files.length + ' photos)';
+
+  // Thumbnail strip (show up to 8)
+  const strip = document.getElementById('bdThumbStrip');
+  strip.innerHTML = '';
+  const preview = files.slice(0, 8);
+  preview.forEach(f => {
+    const img = document.createElement('img');
+    img.className = 'bd-thumb';
+    img.src = URL.createObjectURL(f);
+    strip.appendChild(img);
+  });
+
+  // Reset progress
+  document.getElementById('bdProgressWrap').style.display = 'none';
+  document.getElementById('bdProgressFill').style.width   = '0%';
+  setBdActionBtnsEnabled(true);
+
+  document.getElementById('bulkDetailsSheet').classList.add('open');
+}
+
+function closeBulkDetails() {
+  document.getElementById('bulkDetailsSheet').classList.remove('open');
+  // revoke thumbnail object URLs to free memory
+  document.querySelectorAll('#bdThumbStrip .bd-thumb').forEach(img => {
+    URL.revokeObjectURL(img.src);
+  });
+  bulkFiles = [];
+}
+
+function setBdType(el, type) {
+  document.querySelectorAll('#bdPhotoTypeRow .photo-type-opt').forEach(d => d.classList.remove('sel'));
+  el.classList.add('sel');
+  bdType = type;
+}
+
+function setBdActionBtnsEnabled(enabled) {
+  document.getElementById('bdSaveBtn').disabled  = !enabled;
+  document.getElementById('bdShareBtn').disabled = !enabled;
+  document.getElementById('bdActionRow').style.opacity = enabled ? '1' : '0.4';
+  document.getElementById('bdActionRow').style.pointerEvents = enabled ? '' : 'none';
+}
+
+// ─── EXECUTE BULK (Save or Share) ─────────────────────────
+async function executeBulk(action) {
+  if (!bulkFiles.length) return;
+
+  const road       = document.getElementById('bdRoad').value || 'Unknown Road';
+  const town       = document.getElementById('bdTown').value;
+  const prov       = document.getElementById('bdProvince').value;
+  const isoDate    = document.getElementById('bdDate').value || formatDateISO();
+  const device     = document.getElementById('bdDevice').value || currentDevice;
+  const quality    = parseInt(document.getElementById('bdQuality').value) / 100;
+  const color      = themeColors[document.getElementById('bdTheme').value] || '#00d97e';
+  const startStr   = document.getElementById('bdTimeStart').value || '09:00';
+  const endStr     = document.getElementById('bdTimeEnd').value   || currentHM();
+
+  // Build date display string
+  let dateDisplay = formatDateDMY();
+  if (isoDate) {
+    const [y,m,d] = isoDate.split('-');
+    const dt = new Date(parseInt(y), parseInt(m)-1, parseInt(d));
+    dateDisplay = dt.toLocaleDateString('en-GB') + ' • ' + dt.toLocaleDateString('en-GB',{weekday:'long'});
+  }
+
+  const n         = bulkFiles.length;
+  const timeSlots = randomTimeSlots(hmToMins(startStr), hmToMins(endStr), n);
+  const city      = [town, prov].filter(Boolean).join(', ');
+
+  // Show progress
+  const progressWrap  = document.getElementById('bdProgressWrap');
+  const progressFill  = document.getElementById('bdProgressFill');
+  const progressLabel = document.getElementById('bdProgressLabel');
+  progressWrap.style.display = 'block';
+  progressFill.style.width   = '0%';
+  setBdActionBtnsEnabled(false);
+
+  const stampedFiles = [];
+  let errors = 0;
 
   for (let i = 0; i < n; i++) {
-    let mins = startMins + i * interval;
-    if (mins >= 1440) mins -= 1440;
-    const overrideEl = document.getElementById('manualTime');
-    const savedAuto  = autoSyncTime;
-    autoSyncTime = false;
-    overrideEl.value = Math.floor(mins/60).toString().padStart(2,'0') + ':' + (mins%60).toString().padStart(2,'0');
+    progressLabel.textContent = (action === 'save' ? 'Saving' : 'Preparing') + ' ' + (i+1) + ' / ' + n + '…';
+    progressFill.style.width  = ((i+1) / n * 100) + '%';
 
-    await new Promise(res => {
-      const r = new FileReader();
-      r.onload = ev => {
-        upPrev.src = ev.target.result;
-        upPrev.style.display = 'block';
-        video.style.display  = 'none';
-        isUpload = true;
-        upPrev.onload = () => { takeSnapshot(true, files[i]); res(); };
-        if (upPrev.complete) { takeSnapshot(true, files[i]); res(); }
-      };
-      r.readAsDataURL(files[i]);
-    });
-    autoSyncTime = savedAuto;
-    await new Promise(r => setTimeout(r, 1200));
+    try {
+      const img = await new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload = ev => {
+          const im = new Image();
+          im.onload  = () => res(im);
+          im.onerror = rej;
+          im.src = ev.target.result;
+        };
+        r.onerror = rej;
+        r.readAsDataURL(bulkFiles[i]);
+      });
+
+      const tw = img.naturalWidth  || img.width;
+      const th = img.naturalHeight || img.height;
+      canvas.width = tw; canvas.height = th;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, tw, th);
+
+      drawOverlay(ctx, tw, th, {
+        color:  color,
+        time:   timeSlots[i],
+        date:   dateDisplay,
+        road:   road,
+        city:   city,
+        coords: gpsCoords,
+        device: device
+      });
+
+      const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', quality));
+      if (!blob) throw new Error('toBlob failed');
+
+      const fname = 'RoadCam_' + isoDate + '_' + timeSlots[i].replace(/[:\s]/g,'-') + '_' + (i+1) + '.jpg';
+      stampedFiles.push(new File([blob], fname, {type:'image/jpeg'}));
+
+      // For "save": download each file immediately one-by-one
+      if (action === 'save') {
+        downloadBlob(blob, fname);
+        await new Promise(r => setTimeout(r, IS_IOS ? 1400 : 500));
+      }
+    } catch(e) {
+      console.error('Bulk stamp failed for file', i, e);
+      errors++;
+    }
+
+    await new Promise(r => setTimeout(r, 60));
   }
-  bulkInput.value = '';
-  showStatus('✅ Bulk upload complete!');
-};
+
+  progressFill.style.width = '100%';
+
+  if (action === 'save') {
+    const doneCount = n - errors;
+    showStatus(errors > 0
+      ? '⚠️ Saved ' + doneCount + '/' + n + ' (' + errors + ' failed)'
+      : '⬇️ Saved ' + doneCount + ' photo(s) to device!');
+    await new Promise(r => setTimeout(r, 800));
+    closeBulkDetails();
+  } else {
+    // Share action
+    closeBulkDetails();
+    if (stampedFiles.length === 0) {
+      showStatus('❌ No photos could be processed', 'error');
+      return;
+    }
+    if (errors > 0) showStatus('⚠️ ' + errors + ' failed, sharing ' + stampedFiles.length, 'info', 4000);
+    presentSave(stampedFiles, 'share');
+  }
+}
 
 // ─── DRAW OVERLAY ─────────────────────────────────────────
 function drawOverlay(ctx, tw, th, opts = {}) {
@@ -1393,31 +1647,11 @@ function selectAll() {
 }
 
 // ─── BULK SAVE / SHARE FROM ALBUM ─────────────────────────
-// NEW FLOW: select → fill details → then save/share
-// This is triggered by the toolbar Save/Share buttons
-async function fetchSelectedFiles() {
-  const sel   = filteredPhotos.filter(p => selectedIds.has(p.id));
-  const files = [];
-  for (let i = 0; i < sel.length; i++) {
-    try {
-      const res = await fetch(SERVER + sel[i].filepath, {cache:'no-store'});
-      if (!res.ok) throw new Error(res.status);
-      const blob = await res.blob();
-      files.push(new File([blob], makeFileName(sel[i], i), {type: blob.type || 'image/jpeg'}));
-    } catch(e) { console.error('fetch failed', sel[i].id, e); }
-  }
-  return files;
-}
-
-// Direct bulk save (no restamp) — opens the details sheet to let user update details first
 async function bulkDownload() { bulkSaveWithDetails('save'); }
 async function bulkShare()    { bulkSaveWithDetails('share'); }
 
-// Opens the restamp sheet prefilled but with a "save/share" action mode
-// so the user can update details if they want before downloading
 function bulkSaveWithDetails(mode) {
   if (selectedIds.size === 0) { showStatus('No photos selected', 'error'); return; }
-  // Re-use the restamp sheet configured for download-only mode (no server update)
   isBulkRestamp = (selectedIds.size > 1);
   restampIds    = [...selectedIds];
   restampType   = 'poster';
@@ -1453,10 +1687,8 @@ function bulkSaveWithDetails(mode) {
   const n = selectedIds.size;
   document.getElementById('restampTitle').textContent = (n > 1 ? 'Bulk ' : '') + 'Details & ' + (mode === 'share' ? 'Share' : 'Save') + ' (' + n + ' photo' + (n > 1 ? 's' : '') + ')';
 
-  // Store mode so applyRestamp knows what to do after processing
   document.getElementById('restampSheet').dataset.mode = mode;
 
-  // Adjust action row for save/share-only (no Server button)
   const actionRow = document.getElementById('rsActionRow');
   actionRow.className = 'rs-action-row dual';
   actionRow.innerHTML = `
@@ -1528,7 +1760,6 @@ function openSingleRestamp(photo) {
   document.getElementById('rsTimeRow').style.display     = 'block';
   document.getElementById('restampTitle').textContent    = 'Re-stamp Photo';
 
-  // Full action row: save + share + server
   const actionRow = document.getElementById('rsActionRow');
   actionRow.className = 'rs-action-row triple';
   actionRow.innerHTML = `
@@ -1543,7 +1774,7 @@ function openSingleRestamp(photo) {
   document.getElementById('restampSheet').classList.add('open');
 }
 
-// ─── RE-STAMP: BULK (from select bar) ─────────────────────
+// ─── RE-STAMP: BULK (from album select bar) ───────────────
 function bulkRestamp() {
   if (selectedIds.size === 0) { showStatus('No photos selected', 'error'); return; }
   isBulkRestamp = true;
@@ -1575,7 +1806,6 @@ function bulkRestamp() {
   const n = restampIds.length;
   document.getElementById('restampTitle').textContent = 'Bulk Re-stamp (' + n + ' photos)';
 
-  // Full action row for restamp: save + share + server
   const actionRow = document.getElementById('rsActionRow');
   actionRow.className = 'rs-action-row triple';
   actionRow.innerHTML = `
@@ -1600,11 +1830,7 @@ function closeRestamp() {
   document.getElementById('rsProgressWrap').style.display = 'none';
 }
 
-// ─────────────────────────────────────────────────────────
-//  applyRestamp — unified handler for save / share / server
-//  Processes photos one by one, collecting blobs, then
-//  delivers them via the chosen action.
-// ─────────────────────────────────────────────────────────
+// ─── applyRestamp — unified handler ───────────────────────
 async function applyRestamp(action) {
   const baseOpts = {
     road:     document.getElementById('rsRoad').value,
@@ -1623,7 +1849,6 @@ async function applyRestamp(action) {
     quality:  parseInt(document.getElementById('rsQuality').value) / 100
   };
 
-  // Build time slots
   let timeSlots = [];
   if (isBulkRestamp && restampIds.length > 1) {
     const startStr = document.getElementById('rsBulkStart').value || '09:00';
@@ -1641,7 +1866,6 @@ async function applyRestamp(action) {
     timeSlots = restampIds.map(() => t12);
   }
 
-  // Show progress
   const progressWrap  = document.getElementById('rsProgressWrap');
   const progressFill  = document.getElementById('rsProgressFill');
   const progressLabel = document.getElementById('rsProgressLabel');
@@ -1650,7 +1874,7 @@ async function applyRestamp(action) {
   actionRow.style.opacity    = '0.4';
   actionRow.style.pointerEvents = 'none';
 
-  const actionLabel = action === 'save' ? 'Preparing' : action === 'share' ? 'Preparing' : 'Uploading';
+  const actionLabel = action === 'server' ? 'Uploading' : 'Preparing';
   progressLabel.textContent = actionLabel + ' 0 / ' + restampIds.length;
 
   let processedFiles = [];
@@ -1668,11 +1892,9 @@ async function applyRestamp(action) {
       const opts = { ...baseOpts, time: timeSlots[i] };
 
       if (action === 'server') {
-        // Upload to server (existing path)
         await restampAndUpload(photo, opts);
         done++;
       } else {
-        // Render stamped blob for local save/share
         const blob = await restampToBlob(photo, opts);
         if (blob) {
           const fname = 'RoadCam_' + baseOpts.isoDate + '_' + timeSlots[i].replace(/[:\s]/g,'-') + '_' + photo.id + '.jpg';
@@ -1685,12 +1907,11 @@ async function applyRestamp(action) {
       errors++;
     }
 
-    await new Promise(r => setTimeout(r, 80)); // small yield between photos
+    await new Promise(r => setTimeout(r, 80));
   }
 
   progressFill.style.width = '100%';
 
-  // Deliver result
   if (action === 'server') {
     const msg = errors > 0
       ? '⚠️ ' + done + '/' + restampIds.length + ' uploaded (' + errors + ' failed)'
@@ -1707,7 +1928,6 @@ async function applyRestamp(action) {
       return;
     }
     if (errors > 0) showStatus('⚠️ ' + errors + ' photo(s) failed, delivering ' + processedFiles.length, 'info', 4000);
-    // Use presentSave so iOS gets the share-sheet gesture correctly
     presentSave(processedFiles, action);
     selectedIds.clear(); selectMode = false;
     document.getElementById('selectBar').classList.remove('active');
@@ -1716,7 +1936,6 @@ async function applyRestamp(action) {
   isBulkRestamp = false;
 }
 
-// Render a stamped JPEG blob from a photo record — no server upload
 async function restampToBlob(photo, opts) {
   const img = await loadImage(SERVER + photo.filepath);
   const tw  = img.naturalWidth  || img.width;
@@ -1918,25 +2137,4 @@ async function duStartUpload() {
   }
 
   showStatus('✅ Uploaded ' + done + '/' + duFiles.length + ' photos!');
-  btn.disabled = false;
-  setTimeout(() => {
-    duFiles = duFiles.filter(f => f.status !== 'done');
-    renderDuQueue();
-    progressBar.style.display = 'none';
-    progressFill.style.width  = '0%';
-    document.getElementById('duUploadBtn').disabled = duFiles.length === 0;
-  }, 3000);
-}
-
-function duClear() {
-  duFiles = [];
-  renderDuQueue();
-  document.getElementById('duUploadBtn').disabled = true;
-  document.getElementById('duProgressBar').style.display = 'none';
-  document.getElementById('duProgressFill').style.width  = '0%';
-}
-
-initApp();
-</script>
-</body>
-</html>
+  btn.disa
