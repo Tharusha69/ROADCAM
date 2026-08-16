@@ -616,11 +616,11 @@ input[type="date"].sfield{color-scheme:dark;color:#fff}
         <div class="photo-type-opt" onclick="setBdType(this,'self')">🤳 Self Photo</div>
       </div>
       <span class="field-label">Route</span>
-      <select id="duRoute" class="sfield" style="margin-bottom:4px">
+      <select id="bdRoute" class="sfield" style="margin-bottom:4px">
         <option value="">-- Select Route (optional) --</option>
       </select>
       <span class="field-label">Road Name</span>
-      <input type="text" id="duRoad" class="sfield" placeholder="Road Name">
+      <input type="text" id="bdRoad" class="sfield" placeholder="Road Name">
       <span class="field-label">Town / City &amp; Province</span>
       <div class="row2">
         <input type="text" id="bdTown" class="sfield" placeholder="Town / City">
@@ -716,6 +716,10 @@ input[type="date"].sfield{color-scheme:dark;color:#fff}
         <div class="photo-type-opt sel" onclick="setDuType(this,'poster')">📸 Poster Photo</div>
         <div class="photo-type-opt" onclick="setDuType(this,'self')">🤳 Self Photo</div>
       </div>
+      <span class="field-label">Route</span>
+      <select id="duRoute" class="sfield" style="margin-bottom:4px">
+        <option value="">-- Select Route (optional) --</option>
+      </select>
       <span class="field-label">Road Name</span>
       <input type="text" id="duRoad" class="sfield" placeholder="Road Name">
       <span class="field-label">Town / City &amp; Province</span>
@@ -824,37 +828,6 @@ input[type="date"].sfield{color-scheme:dark;color:#fff}
       <button onclick="applyRouteToPhotos()"
         style="width:100%;margin-top:4px;padding:13px;background:var(--g);color:#000;border:none;border-radius:12px;font-size:12px;font-weight:800;cursor:pointer;text-transform:uppercase;letter-spacing:1px">
         ✅ Assign Route to Photos
-      </button>
-    </div>
-      <div class="rs-section">
-        <div class="rs-section-title">Filter Photos to Assign</div>
-        <div style="display:flex;gap:8px;margin-bottom:10px">
-          <input type="date" id="assignDateFilter" class="sfield" style="flex:1" onchange="loadAssignPhotos()">
-          <button onclick="document.getElementById('assignDateFilter').value='';loadAssignPhotos()"
-            style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:#fff;border-radius:8px;padding:0 10px;font-size:11px;cursor:pointer">
-            Clear
-          </button>
-        </div>
-        <div style="display:flex;gap:8px;margin-bottom:8px">
-          <button onclick="assignSelectAll()"
-            style="flex:1;padding:7px;background:rgba(0,217,126,0.1);border:1px solid rgba(0,217,126,0.3);color:var(--g);border-radius:8px;font-size:10px;font-weight:700;cursor:pointer">
-            Select All
-          </button>
-          <button onclick="assignSelectNone()"
-            style="flex:1;padding:7px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.6);border-radius:8px;font-size:10px;font-weight:700;cursor:pointer">
-            Deselect All
-          </button>
-        </div>
-        <div id="assignPhotoGrid"
-          style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-height:40vh;overflow-y:auto">
-        </div>
-        <div id="assignEmpty" style="display:none;text-align:center;color:rgba(255,255,255,0.3);font-size:12px;padding:20px">
-          No photos found
-        </div>
-      </div>
-      <button onclick="applyRouteToPhotos()"
-        style="width:100%;margin-top:12px;padding:13px;background:var(--g);color:#000;border:none;border-radius:12px;font-size:12px;font-weight:800;cursor:pointer;text-transform:uppercase;letter-spacing:1px">
-        ✅ Assign Route to Selected Photos
       </button>
     </div>
 
@@ -2345,7 +2318,7 @@ function loadImage(src) {
 }
 
 // ─── DIRECT UPLOAD OVERLAY ────────────────────────────────
-function openDirectUpload() {
+async function openDirectUpload() {
   const now = new Date();
   document.getElementById('duRoad').value     = document.getElementById('manualRoad').value || gpsRoad;
   document.getElementById('duTown').value     = document.getElementById('manualTown').value || gpsTown;
@@ -2353,6 +2326,8 @@ function openDirectUpload() {
   document.getElementById('duDate').value     = formatDateISO(now);
   document.getElementById('duDevice').value   = currentDevice;
   document.getElementById('duTimeEnd').value  = formatTime24(now);
+  if (!allRoutes.length) await loadRoutes();
+  else populateRouteSelects();
   document.getElementById('directUploadOverlay').classList.add('open');
 }
 function closeDirectUpload() { document.getElementById('directUploadOverlay').classList.remove('open'); }
@@ -2565,7 +2540,8 @@ async function autoServerUpload(files) {
       fd.append('time',      times[i]);
       fd.append('timestamp', now.toLocaleString());
       fd.append('location',  location);
-      fd.append('route',     document.getElementById('duRoute').value || '');
+      const bdRouteEl = document.getElementById('bdRoute');
+      fd.append('route',     bdRouteEl ? bdRouteEl.value : '');
       fd.append('device',    device);
 
       const r = await fetch(SERVER + '/api/upload', {method:'POST', body:fd});
