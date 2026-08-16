@@ -17,9 +17,10 @@ if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
 const db = new sqlite3.Database('/data/roadcam.db');
 
-// Create tables
+// Create tables safely
 db.serialize(() => {
-  db.run(`ALTER TABLE photos ADD COLUMN original_filepath TEXT DEFAULT ''`, () => {});
+  db.run(`
+    CREATE TABLE IF NOT EXISTS photos (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       filename TEXT UNIQUE NOT NULL,
       type TEXT NOT NULL,
@@ -33,8 +34,11 @@ db.serialize(() => {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
-  // Existing DB වලට route column add කරන්න
+  
+  // Existing DB වලට optional columns add කරන්න
+  db.run(`ALTER TABLE photos ADD COLUMN original_filepath TEXT DEFAULT ''`, () => {});
   db.run(`ALTER TABLE photos ADD COLUMN route TEXT DEFAULT ''`, () => {});
+
   db.run(`
     CREATE TABLE IF NOT EXISTS routes (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -47,7 +51,7 @@ db.serialize(() => {
 // Middleware
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use("/uploads", (req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
@@ -84,7 +88,7 @@ app.post('/api/upload', upload.single('photo'), (req, res) => {
 
   db.run(sql, [filename, type, date, time, timestamp, location, route || '', device, filepath, filepath], function(err) {
     if (err) {
-      fs.unlinkSync(req.file.path);
+      if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
       return res.status(500).json({ error: 'Database error: ' + err.message });
     }
     res.json({ 
@@ -162,7 +166,6 @@ app.get('/api/stats', (req, res) => {
   });
 });
 
-
 // Re-stamp: update metadata + replace file in-place
 app.put("/api/restamp/:id", upload.single("photo"), (req, res) => {
   const { id } = req.params;
@@ -177,12 +180,12 @@ app.put("/api/restamp/:id", upload.single("photo"), (req, res) => {
       const newFilepath = "/uploads/" + req.file.filename;
       const origPath = photo.original_filepath || photo.filepath;
       db.run("UPDATE photos SET type=?,date=?,time=?,timestamp=?,location=?,route=?,device=?,filename=?,filepath=?,original_filepath=? WHERE id=?",
-        [type,date,time,timestamp,location,route,device,req.file.filename,newFilepath,origPath,id],
-        function(err){ if(err) return res.status(500).json({error:err.message}); res.json({success:true,id,filepath:newFilepath,original_filepath:origPath}); });
+        [type, date, time, timestamp, location, route, device, req.file.filename, newFilepath, origPath, id],
+        function(err){ if(err) return res.status(500).json({error:err.message}); res.json({success:true, id, filepath:newFilepath, original_filepath:origPath}); });
     } else {
       db.run("UPDATE photos SET type=?,date=?,time=?,timestamp=?,location=?,route=?,device=? WHERE id=?",
-        [type,date,time,timestamp,location,route,device,id],
-        function(err){ if(err) return res.status(500).json({error:err.message}); res.json({success:true,id,filepath:photo.filepath}); });
+        [type, date, time, timestamp, location, route, device, id],
+        function(err){ if(err) return res.status(500).json({error:err.message}); res.json({success:true, id, filepath:photo.filepath}); });
     }
   });
 });
@@ -237,6 +240,7 @@ app.get('/api/export', (req, res) => {
     res.send(JSON.stringify(rows, null, 2));
   });
 });
+
 // Get all routes
 app.get('/api/routes', (req, res) => {
   db.all('SELECT * FROM routes ORDER BY name ASC', (err, rows) => {
@@ -262,6 +266,7 @@ app.delete('/api/routes/:id', (req, res) => {
     res.json({ success: true });
   });
 });
+
 // Bulk update route
 app.patch('/api/photos/bulk/route', (req, res) => {
   const { ids, route } = req.body;
@@ -278,7 +283,7 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// HTML routes — API routes වලට පස්සෙ define කරන්න ඕනෙ
+// HTML routes
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'pro_road_cam_server_upload.html'));
 });
@@ -297,4 +302,3 @@ process.on('SIGINT', () => {
   console.log('Database connection closed');
   process.exit(0);
 });
-// ── PATCH: Re-stamp route ──────────────────────────────────
