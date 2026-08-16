@@ -28,11 +28,14 @@ db.serialize(() => {
       time TEXT NOT NULL,
       timestamp TEXT NOT NULL,
       location TEXT NOT NULL,
+      route TEXT DEFAULT '',
       device TEXT NOT NULL,
       filepath TEXT NOT NULL,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
+  // Existing DB වලට route column add කරන්න
+  db.run(`ALTER TABLE photos ADD COLUMN route TEXT DEFAULT ''`, () => {});
   db.run(`
     CREATE TABLE IF NOT EXISTS routes (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -73,14 +76,14 @@ app.post('/api/upload', upload.single('photo'), (req, res) => {
     return res.status(400).json({ error: 'No file uploaded' });
   }
 
-  const { type, date, time, timestamp, location, device } = req.body;
+  const { type, date, time, timestamp, location, route, device } = req.body;
   const filename = req.file.filename;
   const filepath = `/uploads/${filename}`;
 
-  const sql = `INSERT INTO photos (filename, type, date, time, timestamp, location, device, filepath) 
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+  const sql = `INSERT INTO photos (filename, type, date, time, timestamp, location, route, device, filepath) 
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
-  db.run(sql, [filename, type, date, time, timestamp, location, device, filepath], function(err) {
+  db.run(sql, [filename, type, date, time, timestamp, location, route || '', device, filepath], function(err) {
     if (err) {
       fs.unlinkSync(req.file.path);
       return res.status(500).json({ error: 'Database error: ' + err.message });
@@ -94,10 +97,15 @@ app.post('/api/upload', upload.single('photo'), (req, res) => {
   });
 });
 
-// Get all photos
+// Get all photos (optional date + route filter)
 app.get('/api/photos', (req, res) => {
-  const sql = `SELECT * FROM photos ORDER BY date DESC, time DESC`;
-  db.all(sql, (err, rows) => {
+  const { date, route } = req.query;
+  let sql = `SELECT * FROM photos WHERE 1=1`;
+  const params = [];
+  if (date)  { sql += ` AND date = ?`;                         params.push(date); }
+  if (route) { sql += ` AND LOWER(route) LIKE ?`;              params.push('%' + route.toLowerCase() + '%'); }
+  sql += ` ORDER BY date DESC, time DESC`;
+  db.all(sql, params, (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(rows || []);
   });
@@ -162,16 +170,17 @@ app.put("/api/restamp/:id", upload.single("photo"), (req, res) => {
   const { type, date, time, timestamp, location, device } = req.body;
   db.get("SELECT filepath FROM photos WHERE id = ?", [id], (err, photo) => {
     if (err || !photo) return res.status(404).json({ error: "Photo not found" });
+    const route = req.body.route || '';
     if (req.file) {
       const oldPath = path.join("/data", photo.filepath);
       if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
       const newFilepath = "/uploads/" + req.file.filename;
-      db.run("UPDATE photos SET type=?,date=?,time=?,timestamp=?,location=?,device=?,filename=?,filepath=? WHERE id=?",
-        [type,date,time,timestamp,location,device,req.file.filename,newFilepath,id],
+      db.run("UPDATE photos SET type=?,date=?,time=?,timestamp=?,location=?,route=?,device=?,filename=?,filepath=? WHERE id=?",
+        [type,date,time,timestamp,location,route,device,req.file.filename,newFilepath,id],
         function(err){ if(err) return res.status(500).json({error:err.message}); res.json({success:true,id,filepath:newFilepath}); });
     } else {
-      db.run("UPDATE photos SET type=?,date=?,time=?,timestamp=?,location=?,device=? WHERE id=?",
-        [type,date,time,timestamp,location,device,id],
+      db.run("UPDATE photos SET type=?,date=?,time=?,timestamp=?,location=?,route=?,device=? WHERE id=?",
+        [type,date,time,timestamp,location,route,device,id],
         function(err){ if(err) return res.status(500).json({error:err.message}); res.json({success:true,id,filepath:photo.filepath}); });
     }
   });
@@ -252,22 +261,12 @@ app.delete('/api/routes/:id', (req, res) => {
     res.json({ success: true });
   });
 });
-// Update photo location/route
-app.patch('/api/photos/:id/location', (req, res) => {
-  const { location } = req.body;
-  if (!location) return res.status(400).json({ error: 'Location required' });
-  db.run('UPDATE photos SET location = ? WHERE id = ?', [location, req.params.id], function(err) {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ success: true });
-  });
-});
-
-// Bulk update location
-app.patch('/api/photos/bulk/location', (req, res) => {
-  const { ids, location } = req.body;
-  if (!ids || !ids.length || !location) return res.status(400).json({ error: 'ids and location required' });
+// Bulk update route
+app.patch('/api/photos/bulk/route', (req, res) => {
+  const { ids, route } = req.body;
+  if (!ids || !ids.length) return res.status(400).json({ error: 'ids required' });
   const placeholders = ids.map(() => '?').join(',');
-  db.run(`UPDATE photos SET location = ? WHERE id IN (${placeholders})`, [location, ...ids], function(err) {
+  db.run(`UPDATE photos SET route = ? WHERE id IN (${placeholders})`, [route || '', ...ids], function(err) {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ success: true, updated: this.changes });
   });
