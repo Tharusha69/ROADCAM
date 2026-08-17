@@ -1692,6 +1692,8 @@ function renderAlbum() {
   updateSelectModeUI();
 }
 
+
+
 function onPhotoClick(photo, el) {
   if (selectMode) {
     if (selectedIds.has(photo.id)) { selectedIds.delete(photo.id); el.classList.remove('selected'); }
@@ -1842,8 +1844,40 @@ function openSingleRestamp(photo) {
   document.getElementById('rsDate').value     = formatDateISO(now);
   document.getElementById('rsDevice').value   = currentDevice;
 
-  document.getElementById('restampPreviews').innerHTML =
-    `<img class="restamp-preview" src="${SERVER}${photo.filepath}">`;
+const frameNum = photo.id ? '#' + String(photo.id).padStart(4, '0') : '';
+const typeBadge = photo.type === 'self' ? '🤳 SELF' : '📸 POSTER';
+const locParts2 = (photo.location || '').split(',').map(s => s.trim());
+
+document.getElementById('restampPreviews').innerHTML = `
+  <div class="photo-detail-card" style="margin-bottom:14px;max-height:260px">
+    <div class="photo-detail-img">
+      <img src="${SERVER}${photo.filepath}" style="max-height:260px">
+    </div>
+    <div class="photo-detail-panel">
+      <div class="frame-type-badge">${typeBadge}</div>
+      <div class="frame-number-badge">${frameNum}</div>
+      <div class="frame-meta-row">
+        <div class="frame-meta-item">
+          <span class="frame-meta-label">Type</span>
+          <span class="frame-meta-value">${photo.type === 'self' ? 'Self / Front' : 'Poster / Front'}</span>
+        </div>
+        <div class="frame-meta-item">
+          <span class="frame-meta-label">Timestamp</span>
+          <span class="frame-meta-value">${photo.date || ''} · ${photo.time || ''}</span>
+        </div>
+        <div class="frame-meta-item">
+          <span class="frame-meta-label">Location</span>
+          <span class="frame-meta-value">${photo.location || 'Unknown'}</span>
+        </div>
+        <div class="frame-meta-item">
+          <span class="frame-meta-label">Device</span>
+          <span class="frame-meta-value">${photo.device || currentDevice}</span>
+        </div>
+        ${photo.route ? `<div class="frame-meta-item"><span class="frame-meta-label">Route</span><span class="frame-meta-value">${photo.route}</span></div>` : ''}
+      </div>
+    </div>
+  </div>
+`;
 
   document.querySelectorAll('.restamp-sheet .photo-type-opt').forEach(el => el.classList.remove('sel'));
   document.querySelectorAll('.restamp-sheet .photo-type-opt')[photo.type === 'self' ? 1 : 0].classList.add('sel');
