@@ -2,293 +2,869 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pro Road Cam Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-<style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:'Plus Jakarta Sans',system-ui,sans-serif}
-:root{--g:#00d97e;--gd:#00a85a;--bg:#030a06;--text:#fff}
-body{background:var(--bg);color:var(--text);min-height:100vh;padding:20px}
-
-.container{max-width:1400px;margin:0 auto}
-.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:30px;border-bottom:2px solid rgba(0,217,126,0.2);padding-bottom:20px}
-.header h1{font-size:28px;font-weight:800;letter-spacing:1px}
-.header-info{display:flex;gap:20px;align-items:center;text-align:right}
-.stat{display:flex;flex-direction:column;align-items:center}
-.stat-number{font-size:24px;font-weight:800;color:var(--g)}
-.stat-label{font-size:11px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.5px}
-
-.controls{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;align-items:center}
-.control-group{display:flex;gap:8px;align-items:center}
-.filter-btn{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.8);padding:8px 14px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:0.5px;transition:all 0.2s}
-.filter-btn.active{background:rgba(0,217,126,0.15);border-color:var(--g);color:var(--g)}
-.filter-btn:hover{background:rgba(255,255,255,0.12)}
-
-input[type="date"]{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:var(--text);padding:8px 12px;border-radius:8px;font-size:11px}
-
-.action-btns{display:flex;gap:8px;margin-left:auto}
-.action-btn{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:8px 14px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:0.5px;transition:all 0.2s}
-.action-btn:hover{background:rgba(255,255,255,0.14)}
-.action-btn.danger{background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.3);color:#ef4444}
-
-.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px;margin-bottom:30px}
-.photo-card{position:relative;border-radius:12px;overflow:hidden;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);transition:transform 0.2s,border-color 0.2s;cursor:pointer}
-.photo-card:hover{transform:translateY(-4px);border-color:rgba(0,217,126,0.3)}
-.photo-img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
-.photo-info{padding:12px;font-size:10px;color:rgba(255,255,255,0.7)}
-.photo-type{color:var(--g);font-weight:700;text-transform:uppercase;margin-bottom:4px}
-.photo-date{margin-bottom:2px}
-.photo-time{color:rgba(255,255,255,0.5);font-size:9px}
-.photo-location{color:rgba(255,255,255,0.5);font-size:9px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.photo-delete{position:absolute;top:8px;right:8px;background:rgba(239,68,68,0.8);border:none;color:#fff;width:28px;height:28px;border-radius:50%;font-size:14px;cursor:pointer;display:none;transition:background 0.2s}
-.photo-card:hover .photo-delete{display:flex;align-items:center;justify-content:center}
-.photo-delete:hover{background:rgba(239,68,68,1)}
-
-.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:1000;align-items:center;justify-content:center;padding:20px}
-.modal.active{display:flex}
-.modal-content{background:var(--bg);border:1px solid rgba(0,217,126,0.3);border-radius:12px;max-width:90vw;max-height:90vh;overflow:auto;padding:20px;position:relative}
-.modal-close{position:absolute;top:16px;right:16px;background:none;border:none;color:#fff;font-size:24px;cursor:pointer}
-.modal-img{max-width:100%;max-height:70vh;display:block;border-radius:8px;margin-bottom:16px}
-.modal-details{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.06)}
-.detail-item{display:flex;flex-direction:column}
-.detail-label{font-size:10px;color:var(--g);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px}
-.detail-value{font-size:12px;color:rgba(255,255,255,0.8)}
-
-.empty-state{text-align:center;padding:60px 20px;color:rgba(255,255,255,0.4)}
-.empty-icon{font-size:48px;margin-bottom:16px;opacity:0.5}
-.empty-text{font-size:16px;margin-bottom:8px}
-
-.loading{text-align:center;padding:40px;color:rgba(255,255,255,0.5)}
-
-@media (max-width: 768px) {
-  .header{flex-direction:column;text-align:center;gap:16px}
-  .header-info{width:100%;justify-content:space-around}
-  .controls{flex-direction:column}
-  .action-btns{width:100%;flex-direction:column;margin:0}
-  .gallery{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
-}
-</style>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Pro Road Cam v8.6</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<link rel="stylesheet" href="roadcam-style.css">
 </head>
 <body>
 
-<div class="container">
-  <div class="header">
-    <h1>📸 Road Cam Dashboard</h1>
-    <div class="header-info">
-      <div class="stat">
-        <div class="stat-number" id="totalCount">0</div>
-        <div class="stat-label">Total Photos</div>
+<div id="cam-wrap">
+  <div class="hud-top">
+    <div class="device-badge">
+      <div class="device-dot"></div>
+      <span class="device-name" id="deviceLabel">iPhone 14 Pro Max</span>
+    </div>
+    <div class="hud-right">
+      <span style="font-size:10px;font-weight:700;display:flex;align-items:center"><span class="server-dot" id="serverDot"></span><span id="serverStatus">Connecting…</span></span>
+      <div class="badge-btn" onclick="openAlbum()">📷 Album</div>
+      <div class="badge-btn" onclick="openDirectUpload()">⬆️ Upload</div>
+      <div class="badge-btn" onclick="toggleSheet()">⚙ Settings</div>
+    </div>
+  </div>
+
+  <div class="gps-bar" id="gpsBar">
+    <span class="gps-icon">⊙</span>
+    <span class="gps-text" id="gpsText">Acquiring location…</span>
+    <span class="gps-status searching" id="gpsStatus">Searching</span>
+  </div>
+
+  <div class="reload-badge" id="reloadBadge" onclick="location.reload()" title="Click to reload now">
+    Auto-reload in <span id="reloadCountdown">--</span>
+  </div>
+
+  <video id="video" autoplay playsinline></video>
+  <img id="up-prev" src="" alt="">
+
+  <div class="overlay-stamp" id="stampOverlay">
+    <div class="stamp-card">
+      <div class="stamp-left">
+        <div class="time" id="dispTime">--:--</div>
+        <div class="date" id="dispDate">---</div>
       </div>
-      <div class="stat">
-        <div class="stat-number" id="posterCount">0</div>
-        <div class="stat-label">Poster</div>
-      </div>
-      <div class="stat">
-        <div class="stat-number" id="selfCount">0</div>
-        <div class="stat-label">Self</div>
+      <div class="stamp-right">
+        <div class="road" id="dispRoad">Searching…</div>
+        <div class="city" id="dispCity"></div>
+        <div class="coords" id="dispCoords">0.00000° N, 0.00000° E</div>
       </div>
     </div>
   </div>
 
-  <div class="controls">
-    <div class="control-group">
-      <button class="filter-btn active" onclick="filterPhotos(event,'all')">All Photos</button>
-      <button class="filter-btn" onclick="filterPhotos(event,'poster')">📸 Poster</button>
-      <button class="filter-btn" onclick="filterPhotos(event,'self')">🤳 Self</button>
+  <!-- SETTINGS SHEET -->
+  <div class="sheet" id="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <span class="sheet-title">Settings</span>
+      <button class="close-btn" onclick="toggleSheet()">✕</button>
     </div>
-    <div class="control-group">
-      <input type="date" id="dateFilter" onchange="filterByDate()">
+    <span class="field-label">Device Model</span>
+    <div class="device-row" id="deviceRow">
+      <div class="dev-opt sel" onclick="setDevice(this,'iPhone 14 Pro Max')">iPhone 14 Pro Max</div>
+      <div class="dev-opt" onclick="setDevice(this,'iPhone 15 Pro')">iPhone 15 Pro</div>
+      <div class="dev-opt" onclick="setDevice(this,'Samsung S24 Ultra')">S24 Ultra</div>
+      <div class="dev-opt" onclick="setDevice(this,'Google Pixel 9 Pro')">Pixel 9 Pro</div>
+      <div class="dev-opt" onclick="setDevice(this,'OnePlus 12')">OnePlus 12</div>
     </div>
-    <div class="action-btns">
-      <button class="action-btn" onclick="exportDatabase()">📥 Export</button>
-      <button class="action-btn danger" onclick="deleteSelected()">🗑 Delete Date</button>
-      <button class="action-btn" onclick="refreshData()">🔄 Refresh</button>
+    <span class="field-label">Photo Type</span>
+    <div class="photo-type-row" id="photoTypeRow">
+      <div class="photo-type-opt sel" onclick="setPhotoType(this,'poster')">📸 Poster Photo</div>
+      <div class="photo-type-opt" onclick="setPhotoType(this,'self')">🤳 Self Photo</div>
+    </div>
+    <span class="field-label">Aspect Ratio (live cam)</span>
+    <select id="aspectRatio" class="sfield">
+      <option value="9/16">9:16 Portrait</option>
+      <option value="16/9">16:9 Landscape</option>
+      <option value="4/3">4:3 Standard</option>
+      <option value="1/1">1:1 Square</option>
+    </select>
+    <span class="field-label">Road Name</span>
+    <input type="text" id="manualRoad" class="sfield" placeholder="Road Name">
+    <span class="field-label">Town / City &amp; Province</span>
+    <div class="row2">
+      <input type="text" id="manualTown" class="sfield" placeholder="Town / City">
+      <input type="text" id="manualProvince" class="sfield" placeholder="Province">
+    </div>
+    <span class="field-label">Time</span>
+    <div class="dt-lock-row">
+      <label for="dtAutoTime">🕐 Auto-sync with clock</label>
+      <label class="dt-toggle">
+        <input type="checkbox" id="dtAutoTime" checked onchange="onAutoTimeToggle()">
+        <span class="dt-slider"></span>
+      </label>
+    </div>
+    <input type="time" id="manualTime" class="sfield" placeholder="HH:MM">
+    <span class="field-label">Date</span>
+    <div class="dt-lock-row">
+      <label for="dtAutoDate">📅 Auto-sync with today</label>
+      <label class="dt-toggle">
+        <input type="checkbox" id="dtAutoDate" checked onchange="onAutoDateToggle()">
+        <span class="dt-slider"></span>
+      </label>
+    </div>
+    <input type="date" id="manualDate" class="sfield">
+    <span class="field-label">Overlay Theme Color</span>
+    <select id="themeSelect" class="sfield">
+      <option value="green">Green (Default)</option>
+      <option value="blue">Blue</option>
+      <option value="amber">Amber</option>
+      <option value="red">Red</option>
+      <option value="white">White</option>
+    </select>
+    <span class="field-label">JPEG Quality</span>
+    <div style="display:flex;align-items:center;gap:10px">
+      <input type="range" id="jpegQuality" min="70" max="100" value="97" style="flex:1;accent-color:var(--g)">
+      <span id="qualityLabel" style="font-size:11px;color:var(--g);font-weight:700;min-width:32px">97%</span>
+    </div>
+    <span class="field-label">Bulk Upload Start Time</span>
+    <div class="bulk-time-controls">
+      <input type="time" id="bulkStartTime" class="sfield" value="09:00">
+    </div>
+    <span class="field-label">Auto-Reload Interval</span>
+    <select id="autoReloadSelect" class="sfield" onchange="setAutoReload()">
+      <option value="0">Off</option>
+      <option value="5">Every 5 minutes</option>
+      <option value="10">Every 10 minutes</option>
+      <option value="30">Every 30 minutes</option>
+      <option value="60">Every 60 minutes</option>
+    </select>
+    <div style="font-size:9px;color:rgba(255,255,255,0.35);margin-top:4px">Page refreshes automatically to keep data current</div>
+    <button class="apply-btn" onclick="applySettings()">Apply Settings</button>
+  </div>
+</div>
+
+<div class="action-bar">
+  <div class="side-btns">
+    <div class="icon-btn" onclick="location.reload()" title="Reset">⟲</div>
+    <input type="file" id="fileInput" accept="image/*">
+    <label for="fileInput" class="upload-label">Upload</label>
+  </div>
+  <button id="shutter" onclick="takeSnapshot()"></button>
+  <div class="side-btns">
+    <input type="file" id="bulkInput" accept="image/*" multiple>
+    <label for="bulkInput" class="bulk-label">Bulk</label>
+    <div class="icon-btn" id="flashBtn" onclick="toggleFlash()" title="Flash">⚡</div>
+  </div>
+</div>
+
+<canvas id="canvas"></canvas>
+
+<!-- PREVIEW OVERLAY -->
+<div class="preview-overlay" id="previewOverlay">
+  <div class="preview-header">
+    <span>Preview</span>
+    <div class="badge-btn" onclick="closePreview()">✕ Close</div>
+  </div>
+  <div class="preview-img-wrap">
+    <img id="result-img" src="" alt="Captured photo">
+  </div>
+  <div class="preview-actions">
+    <button class="p-btn" style="background:#1a1a1a;color:#fff" onclick="closePreview()">↩ Retake</button>
+    <button class="p-btn" style="background:#16a34a;color:#fff" id="downloadBtn">⬇ Save</button>
+    <button class="p-btn" style="background:#6366f1;color:#fff" id="shareBtn">↗ Share</button>
+    <button class="p-btn" style="background:#00d97e;color:#000" id="uploadServerBtn">⬆ Server</button>
+  </div>
+</div>
+
+<!-- ALBUM OVERLAY -->
+<div class="album-overlay" id="albumOverlay">
+  <div class="album-header">
+    <div>
+      <span class="sheet-title">Photo Album</span>
+      <span style="font-size:11px;color:rgba(255,255,255,0.5);margin-left:8px">(<span id="photoCount">0</span> photos)</span>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="close-btn" style="font-size:10px;width:auto;padding:0 10px;border-radius:8px;background:rgba(0,217,126,0.15);border:1px solid rgba(0,217,126,0.3);color:var(--g)" onclick="toggleSelectMode()">Select</button>
+      <button class="close-btn" onclick="closeAlbum()">✕</button>
     </div>
   </div>
 
-  <div id="galleryContainer">
-    <div class="gallery" id="gallery"></div>
-    <div class="empty-state" id="emptyState" style="display:none">
-      <div class="empty-icon">📷</div>
-      <div class="empty-text">No photos found</div>
+  <div class="select-bar" id="selectBar">
+    <span class="select-info" id="selectInfo">0 selected</span>
+    <div class="select-actions">
+      <button class="sel-btn" style="background:rgba(255,255,255,0.1);color:#fff" onclick="selectAll()">All</button>
+      <button class="sel-btn" style="background:rgba(22,163,74,0.2);color:#4ade80" onclick="bulkDownload()">⬇ Save</button>
+      <button class="sel-btn" style="background:rgba(99,102,241,0.25);color:#a5b4fc" onclick="bulkShare()">↗ Share</button>
+      <button class="sel-btn" style="background:rgba(0,217,126,0.2);color:var(--g)" onclick="bulkRestamp()">Re-stamp</button>
+      <button class="sel-btn" style="background:rgba(239,68,68,0.2);color:#ef4444" onclick="bulkDelete()">Delete</button>
+    </div>
+  </div>
+
+  <div class="album-filters" style="flex-wrap:wrap;row-gap:8px">
+    <div style="display:flex;gap:6px;width:100%;align-items:center">
+      <button class="filter-btn active" onclick="filterAlbum(this,'all')">All</button>
+      <button class="filter-btn" onclick="filterAlbum(this,'poster')">📸 Poster</button>
+      <button class="filter-btn" onclick="filterAlbum(this,'self')">🤳 Self</button>
+      <div class="view-toggle" style="margin-left:auto">
+        <button class="view-btn active" onclick="switchView(this,'grid')">⊞</button>
+        <button class="view-btn" onclick="switchView(this,'list')">☰</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px;width:100%;align-items:center">
+      <input type="date" id="filterDate" class="sfield" style="flex:1;height:36px;padding:6px 10px;font-size:11px" onchange="loadAlbum()">
+      <input type="text" id="filterRoute" class="sfield" placeholder="📍 Route filter…" style="flex:2;height:36px;padding:6px 10px;font-size:11px" readonly>
+      <button onclick="openRoutesSheet()" style="background:rgba(0,217,126,0.15);border:1px solid rgba(0,217,126,0.3);color:var(--g);border-radius:8px;padding:0 12px;font-size:14px;cursor:pointer;white-space:nowrap;height:36px;flex-shrink:0">📍</button>
+    </div>
+  </div>
+
+  <div class="album-content" id="albumContent">
+    <div class="album-loading" id="albumLoading">Loading photos…</div>
+    <div class="album-grid" id="albumGrid" style="display:none"></div>
+    <div class="album-list-view" id="albumListView"></div>
+    <div class="album-empty" id="albumEmpty">No photos found</div>
+  </div>
+
+  <div class="db-actions">
+    <button class="db-btn" onclick="exportDB()">📥 Export</button>
+    <button class="db-btn danger" onclick="deleteByDate()">🗑 By Date</button>
+    <button class="db-btn" onclick="loadAlbum()">🔄 Refresh</button>
+  </div>
+</div>
+
+<!-- RE-STAMP SHEET -->
+<div class="restamp-sheet" id="restampSheet">
+  <div class="restamp-inner">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <span class="sheet-title" id="restampTitle">Re-stamp Photo</span>
+      <button class="close-btn" onclick="closeRestamp()">✕</button>
+    </div>
+    <div class="rs-steps">
+      <div class="rs-step done" id="rsStep1"></div>
+      <div class="rs-step active" id="rsStep2"></div>
+      <div class="rs-step" id="rsStep3"></div>
+    </div>
+    <div class="autofill-badge" id="autofillBadge">
+      <span>⊙</span> Live GPS + Current Time Auto-filled
+    </div>
+    <div id="restampPreviews"></div>
+    <div class="rs-section">
+      <div class="rs-section-title">📍 Details</div>
+      <span class="field-label" style="margin-top:0">Photo Type</span>
+      <div class="photo-type-row">
+        <div class="photo-type-opt sel" onclick="setRestampType(this,'poster')">📸 Poster Photo</div>
+        <div class="photo-type-opt" onclick="setRestampType(this,'self')">🤳 Self Photo</div>
+      </div>
+      <span class="field-label">Road Name</span>
+      <input type="text" id="rsRoad" class="sfield" placeholder="Road Name">
+      <span class="field-label">Town / City &amp; Province</span>
+      <div class="row2">
+        <input type="text" id="rsTown" class="sfield" placeholder="Town / City">
+        <input type="text" id="rsProvince" class="sfield" placeholder="Province">
+      </div>
+    </div>
+    <div class="rs-section">
+      <div class="rs-section-title">🕐 Time</div>
+      <div id="rsTimeRow">
+        <input type="time" id="rsTime" class="sfield" placeholder="e.g. 09:30">
+      </div>
+      <div id="rsBulkTimeRow" style="display:none">
+        <div class="row2">
+          <div>
+            <span class="field-label" style="margin-top:0">Start Time</span>
+            <input type="time" id="rsBulkStart" class="sfield" value="09:00">
+          </div>
+          <div>
+            <span class="field-label" style="margin-top:0">End Time</span>
+            <input type="time" id="rsBulkEnd" class="sfield">
+          </div>
+        </div>
+        <div style="font-size:9px;color:rgba(255,255,255,0.4);margin-top:6px">
+          ⊙ Random times generated within window for each photo
+        </div>
+      </div>
+    </div>
+    <div class="rs-section">
+      <div class="rs-section-title">📅 Date &amp; Device</div>
+      <div class="row2">
+        <div style="flex:1">
+          <span class="field-label" style="margin-top:0">Date</span>
+          <input type="date" id="rsDate" class="sfield">
+        </div>
+        <div style="flex:1">
+          <span class="field-label" style="margin-top:0">Device</span>
+          <input type="text" id="rsDevice" class="sfield" placeholder="Device name">
+        </div>
+      </div>
+      <div class="row2" style="margin-top:8px">
+        <div style="flex:1">
+          <span class="field-label" style="margin-top:0">Theme Color</span>
+          <select id="rsTheme" class="sfield">
+            <option value="green">Green</option>
+            <option value="blue">Blue</option>
+            <option value="amber">Amber</option>
+            <option value="red">Red</option>
+            <option value="white">White</option>
+          </select>
+        </div>
+        <div style="flex:1">
+          <span class="field-label" style="margin-top:0">JPEG Quality</span>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:4px">
+            <input type="range" id="rsQuality" min="70" max="100" value="97" style="flex:1;accent-color:var(--g)">
+            <span id="rsQualityLabel" style="font-size:11px;color:var(--g);font-weight:700;min-width:30px">97%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="rs-progress-wrap" id="rsProgressWrap">
+      <div class="rs-progress-label" id="rsProgressLabel">Processing…</div>
+      <div class="rs-progress-bar"><div class="rs-progress-fill" id="rsProgressFill"></div></div>
+    </div>
+    <div class="rs-action-row triple" id="rsActionRow">
+      <button class="rs-act-btn rs-act-save"   onclick="applyRestamp('save')">⬇ Save</button>
+      <button class="rs-act-btn rs-act-share"  onclick="applyRestamp('share')">↗ Share</button>
+      <button class="rs-act-btn rs-act-server" onclick="applyRestamp('server')">⬆ Server</button>
+      <button class="rs-act-btn rs-act-cancel" onclick="closeRestamp()">Cancel</button>
     </div>
   </div>
 </div>
 
-<div class="modal" id="photoModal">
-  <div class="modal-content">
-    <button class="modal-close" onclick="closeModal()">✕</button>
-    <img class="modal-img" id="modalImg" src="" alt="Photo">
-    <div class="modal-details" id="modalDetails"></div>
+<!-- BULK DETAILS SHEET -->
+<div class="bulk-details-sheet" id="bulkDetailsSheet">
+  <div class="bulk-details-inner">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <span class="sheet-title" id="bdTitle">Bulk — Add Details</span>
+      <button class="close-btn" onclick="closeBulkDetails()">✕</button>
+    </div>
+
+    <div class="bd-count-badge">
+      <span class="bd-count-icon">🖼</span>
+      <span class="bd-count-text">Photos selected</span>
+      <span class="bd-count-num" id="bdCountNum">0</span>
+    </div>
+
+    <div class="bd-thumb-strip" id="bdThumbStrip"></div>
+
+    <div class="rs-section">
+      <div class="rs-section-title">📍 Details</div>
+      <span class="field-label" style="margin-top:0">Photo Type</span>
+      <div class="photo-type-row" id="bdPhotoTypeRow">
+        <div class="photo-type-opt sel" onclick="setBdType(this,'poster')">📸 Poster Photo</div>
+        <div class="photo-type-opt" onclick="setBdType(this,'self')">🤳 Self Photo</div>
+      </div>
+      <span class="field-label">Route</span>
+      <select id="bdRoute" class="sfield" style="margin-bottom:4px" onchange="onBdRouteChange()">
+        <option value="">-- Select Route (optional) --</option>
+      </select>
+      <span class="field-label">Road Name</span>
+      <input type="text" id="bdRoad" class="sfield" placeholder="Road Name">
+      <span class="field-label">Town / City &amp; Province</span>
+      <div class="row2">
+        <input type="text" id="bdTown" class="sfield" placeholder="Town / City">
+        <input type="text" id="bdProvince" class="sfield" placeholder="Province">
+      </div>
+    </div>
+
+    <div class="rs-section">
+      <div class="rs-section-title">🕐 Time Window</div>
+      <div class="row2">
+        <div>
+          <span class="field-label" style="margin-top:0">Start Time</span>
+          <input type="time" id="bdTimeStart" class="sfield" value="09:00">
+        </div>
+        <div>
+          <span class="field-label" style="margin-top:0">End Time</span>
+          <input type="time" id="bdTimeEnd" class="sfield">
+        </div>
+      </div>
+      <div style="font-size:9px;color:rgba(255,255,255,0.4);margin-top:6px">
+        ⊙ Each photo gets a random time within this window
+      </div>
+    </div>
+
+    <div class="rs-section">
+      <div class="rs-section-title">📅 Date &amp; Device</div>
+      <div class="row2">
+        <div style="flex:1">
+          <span class="field-label" style="margin-top:0">Date</span>
+          <input type="date" id="bdDate" class="sfield">
+        </div>
+        <div style="flex:1">
+          <span class="field-label" style="margin-top:0">Device</span>
+          <input type="text" id="bdDevice" class="sfield" placeholder="Device name">
+        </div>
+      </div>
+      <div class="row2" style="margin-top:8px">
+        <div style="flex:1">
+          <span class="field-label" style="margin-top:0">Theme Color</span>
+          <select id="bdTheme" class="sfield">
+            <option value="green">Green</option>
+            <option value="blue">Blue</option>
+            <option value="amber">Amber</option>
+            <option value="red">Red</option>
+            <option value="white">White</option>
+          </select>
+        </div>
+        <div style="flex:1">
+          <span class="field-label" style="margin-top:0">JPEG Quality</span>
+          <div style="display:flex;align-items:center;gap:8px;padding-top:4px">
+            <input type="range" id="bdQuality" min="70" max="100" value="97" style="flex:1;accent-color:var(--g)">
+            <span id="bdQualityLabel" style="font-size:11px;color:var(--g);font-weight:700;min-width:30px">97%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bd-progress-wrap" id="bdProgressWrap">
+      <div class="bd-progress-label" id="bdProgressLabel">Processing 0 / 0…</div>
+      <div class="bd-progress-bar"><div class="bd-progress-fill" id="bdProgressFill"></div></div>
+    </div>
+
+    <div class="bd-action-row" id="bdActionRow">
+      <button class="bd-act-btn bd-act-save"  id="bdSaveBtn"  onclick="executeBulk('save')">⬇ Save to Device</button>
+      <button class="bd-act-btn bd-act-share" id="bdShareBtn" onclick="executeBulk('share')">↗ Share</button>
+      <button class="bd-act-btn bd-act-cancel" onclick="closeBulkDetails()">Cancel</button>
+    </div>
   </div>
 </div>
+
+<!-- DIRECT UPLOAD OVERLAY -->
+<div class="direct-upload-overlay" id="directUploadOverlay">
+  <div class="du-header">
+    <span class="sheet-title">Upload Photos to Server</span>
+    <button class="close-btn" onclick="closeDirectUpload()">✕</button>
+  </div>
+  <div class="du-body">
+    <div class="du-dropzone" id="duDropzone" onclick="document.getElementById('duFileInput').click()"
+         ondragover="duDragOver(event)" ondragleave="duDragLeave(event)" ondrop="duDrop(event)">
+      <div class="du-dropzone-icon">📂</div>
+      <div class="du-dropzone-text">Tap to choose photos</div>
+      <div class="du-dropzone-sub">or drag &amp; drop here • JPG, PNG, HEIC</div>
+    </div>
+    <input type="file" id="duFileInput" accept="image/*" multiple onchange="duFilesChosen(event)">
+    <div class="du-meta">
+      <div class="du-meta-title">Photo Metadata</div>
+      <span class="field-label" style="margin-top:0">Photo Type</span>
+      <div class="photo-type-row" style="margin-bottom:10px">
+        <div class="photo-type-opt sel" onclick="setDuType(this,'poster')">📸 Poster Photo</div>
+        <div class="photo-type-opt" onclick="setDuType(this,'self')">🤳 Self Photo</div>
+      </div>
+      <span class="field-label">Route</span>
+      <select id="duRoute" class="sfield" style="margin-bottom:4px">
+        <option value="">-- Select Route (optional) --</option>
+      </select>
+      <span class="field-label">Road Name</span>
+      <input type="text" id="duRoad" class="sfield" placeholder="Road Name">
+      <span class="field-label">Town / City &amp; Province</span>
+      <div class="row2">
+        <input type="text" id="duTown" class="sfield" placeholder="Town / City">
+        <input type="text" id="duProvince" class="sfield" placeholder="Province">
+      </div>
+      <span class="field-label">Date</span>
+      <input type="date" id="duDate" class="sfield">
+      <span class="field-label">Time Window (random within range)</span>
+      <div class="row2">
+        <input type="time" id="duTimeStart" class="sfield" value="09:00">
+        <input type="time" id="duTimeEnd" class="sfield">
+      </div>
+      <span class="field-label">Device</span>
+      <input type="text" id="duDevice" class="sfield" placeholder="Device name">
+      <span class="field-label">Overlay Theme Color</span>
+      <select id="duTheme" class="sfield">
+        <option value="green">Green</option>
+        <option value="blue">Blue</option>
+        <option value="amber">Amber</option>
+        <option value="red">Red</option>
+        <option value="white">White</option>
+      </select>
+      <span class="field-label">JPEG Quality</span>
+      <div style="display:flex;align-items:center;gap:10px">
+        <input type="range" id="duQuality" min="70" max="100" value="97" style="flex:1;accent-color:var(--g)">
+        <span id="duQualityLabel" style="font-size:11px;color:var(--g);font-weight:700;min-width:32px">97%</span>
+      </div>
+      <div class="du-progress-bar" id="duProgressBar">
+        <div class="du-progress-fill" id="duProgressFill"></div>
+      </div>
+    </div>
+    <div class="du-queue" id="duQueue"></div>
+  </div>
+  <div class="du-actions">
+    <button class="du-clear-btn" onclick="duClear()">Clear</button>
+    <button class="du-upload-btn" id="duUploadBtn" onclick="duStartUpload()" disabled>Upload All</button>
+  </div>
+</div>
+
+<!-- SAVE / SHARE SHEET -->
+<div class="save-sheet" id="saveSheet">
+  <div class="save-inner">
+    <div class="sheet-handle"></div>
+    <div class="save-title">Ready: <span id="saveCount">0</span> photo(s)</div>
+    <div class="save-sub" id="saveHint">Tap below to add them to your Photos app</div>
+    <button class="apply-btn" id="savePrimaryBtn" onclick="doPendingSave()">⬇ Save to device</button>
+    <button class="du-clear-btn" style="width:100%;margin-top:8px" onclick="cancelPendingSave()">Cancel</button>
+  </div>
+</div>
+
+<!-- ROUTES MANAGER SHEET -->
+<div class="restamp-sheet" id="routesSheet">
+  <div class="restamp-inner">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <span class="sheet-title">📍 Manage Routes</span>
+      <button class="close-btn" onclick="closeRoutesSheet()">✕</button>
+    </div>
+
+    <div style="display:flex;gap:6px;margin-bottom:14px">
+      <button id="routeTabManage" onclick="switchRouteTab('manage')"
+        style="flex:1;padding:8px;border-radius:8px;border:none;font-size:10px;font-weight:800;cursor:pointer;background:var(--g);color:#000">
+        📋 Manage
+      </button>
+      <button id="routeTabAssign" onclick="switchRouteTab('assign')"
+        style="flex:1;padding:8px;border-radius:8px;border:none;font-size:10px;font-weight:800;cursor:pointer;background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.6)">
+        🖼 Assign to Photos
+      </button>
+    </div>
+
+    <div id="routePanelManage">
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <input type="text" id="newRouteName" class="sfield"
+          placeholder="e.g. PITIGALA TOWN - NIYAGAMA ROAD"
+          style="flex:1;text-transform:uppercase"
+          onkeydown="if(event.key==='Enter') addRoute()">
+        <button onclick="addRoute()"
+          style="background:var(--g);color:#000;border:none;border-radius:10px;padding:10px 16px;font-weight:800;font-size:11px;cursor:pointer;white-space:nowrap">
+          + ADD
+        </button>
+      </div>
+      <div id="routesList" style="display:flex;flex-direction:column;gap:6px;max-height:55vh;overflow-y:auto"></div>
+    </div>
+
+    <div id="routePanelAssign" style="display:none">
+      <div class="rs-section" style="margin-top:0">
+        <div class="rs-section-title">Select Route to Assign</div>
+        <select id="assignRouteSelect" class="sfield" style="margin-bottom:10px">
+          <option value="">-- Pick a route --</option>
+        </select>
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <input type="date" id="assignDateFilter" class="sfield" style="flex:1">
+          <button onclick="document.getElementById('assignDateFilter').value=''"
+            style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:#fff;border-radius:8px;padding:0 10px;font-size:11px;cursor:pointer">
+            Clear
+          </button>
+        </div>
+        <div style="font-size:9px;color:rgba(255,255,255,0.4);margin-bottom:12px">
+          ⊙ Date filter optional — blank = assign to ALL photos
+        </div>
+      </div>
+      <button onclick="applyRouteToPhotos()"
+        style="width:100%;margin-top:4px;padding:13px;background:var(--g);color:#000;border:none;border-radius:12px;font-size:12px;font-weight:800;cursor:pointer;text-transform:uppercase;letter-spacing:1px">
+        ✅ Assign Route to Photos
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- STATUS TOAST -->
+<div class="upload-status" id="uploadStatus"></div>
 
 <script>
-let allPhotos = [];
-let filteredPhotos = [];
-let currentFilter = 'all';
-let currentDate = '';
+// ─── CONFIG ───────────────────────────────────────────────
+const SERVER = window.location.origin;
 
-const API_URL = window.location.origin;
+// ─── STATE ────────────────────────────────────────────────
+const video          = document.getElementById('video');
+const canvas         = document.getElementById('canvas');
+const resultImg      = document.getElementById('result-img');
+const previewOverlay = document.getElementById('previewOverlay');
+const fileInput      = document.getElementById('fileInput');
+const bulkInput      = document.getElementById('bulkInput');
+const upPrev         = document.getElementById('up-prev');
+const qualitySlider  = document.getElementById('jpegQuality');
+const qualityLabel   = document.getElementById('qualityLabel');
 
-async function loadPhotos() {
+let currentBlob      = null;
+let originalBlob     = null;
+let isUpload         = false;
+let currentDevice    = 'iPhone 14 Pro Max';
+let currentPhotoType = 'poster';
+let gpsCoords        = '0.00000° N, 0.00000° E';
+let flashEnabled     = false;
+let serverOnline     = false;
+
+let albumPhotos      = [];
+let filteredPhotos   = [];
+let currentFilter    = 'all';
+let currentView      = 'grid';
+let selectMode       = false;
+let selectedIds      = new Set();
+
+let restampIds       = [];
+let stampedPhotoIds  = new Set(JSON.parse(localStorage.getItem('stampedPhotoIds') || '[]'));
+let restampType      = 'poster';
+let isBulkRestamp    = false;
+
+let duFiles          = [];
+let duType           = 'poster';
+
+let bulkFiles        = [];
+let bdType           = 'poster';
+
+let autoReloadMins   = 0;
+let reloadSecsLeft   = 0;
+let reloadTimerID    = null;
+
+let autoSyncTime     = true;
+let autoSyncDate     = true;
+
+let gpsRoad     = '';
+let gpsTown     = '';
+let gpsProvince = '';
+const themeColors = {green:'#00d97e',blue:'#3b82f6',amber:'#f59e0b',red:'#ef4444',white:'#ffffff'};
+
+// ─── PLATFORM DETECTION ──────────────────────────────────
+const UA         = navigator.userAgent || '';
+const IS_IOS     = /iPad|iPhone|iPod/.test(UA) ||
+                   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const IS_ANDROID = /Android/i.test(UA);
+const IS_MOBILE  = IS_IOS || IS_ANDROID;
+
+const CAN_SHARE_FILES = (() => {
   try {
-    const response = await fetch(`${API_URL}/api/photos`);
-    allPhotos = await response.json();
-    loadStats();
-    renderPhotos(allPhotos);
-  } catch (err) {
-    console.error('Error loading photos:', err);
-    document.getElementById('emptyState').style.display = 'block';
+    const probe = new File([new Blob(['x'], {type:'image/jpeg'})], 'p.jpg', {type:'image/jpeg'});
+    return !!(navigator.share && navigator.canShare && navigator.canShare({files:[probe]}));
+  } catch(e) { return false; }
+})();
+
+const SHARE_CHUNK = IS_IOS ? 10 : 20;
+let pendingSave   = null;
+
+// ─── HELPERS ──────────────────────────────────────────────
+function formatTime24(date) {
+  date = date || new Date();
+  return date.getHours().toString().padStart(2,'0') + ':' + date.getMinutes().toString().padStart(2,'0');
+}
+function formatTime12(date) {
+  date = date || new Date();
+  const h    = date.getHours();
+  const m    = date.getMinutes();
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const dh   = h > 12 ? h - 12 : h === 0 ? 12 : h;
+  return dh.toString().padStart(2,'0') + ':' + m.toString().padStart(2,'0') + ' ' + ampm;
+}
+function formatDateISO(date) {
+  date = date || new Date();
+  return date.getFullYear() + '-' +
+         (date.getMonth()+1).toString().padStart(2,'0') + '-' +
+         date.getDate().toString().padStart(2,'0');
+}
+function formatDateDMY(date) {
+  date = date || new Date();
+  return date.toLocaleDateString('en-GB');
+}
+function hmToMins(hm) {
+  const [h, m] = hm.split(':').map(Number);
+  return h * 60 + m;
+}
+function minsTo12(mins) {
+  mins = ((mins % 1440) + 1440) % 1440;
+  const h    = Math.floor(mins / 60);
+  const m    = mins % 60;
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const dh   = h > 12 ? h - 12 : h === 0 ? 12 : h;
+  return dh.toString().padStart(2,'0') + ':' + m.toString().padStart(2,'0') + ' ' + ampm;
+}
+function currentHM() { return formatTime24(new Date()); }
+function randomTimeSlots(startMins, endMins, n) {
+  let range = endMins - startMins;
+  if (range <= 0) range += 1440;
+  return Array.from({length: n}, () => {
+    const offset = Math.floor(Math.random() * (range + 1));
+    return minsTo12(startMins + offset);
+  });
+}
+function getManualTimeDisplay() {
+  const val = document.getElementById('manualTime').value;
+  if (!val) return formatTime12();
+  const [h, m] = val.split(':').map(Number);
+  const ampm   = h >= 12 ? 'PM' : 'AM';
+  const dh     = h > 12 ? h - 12 : h === 0 ? 12 : h;
+  return dh.toString().padStart(2,'0') + ':' + m.toString().padStart(2,'0') + ' ' + ampm;
+}
+function getManualDateDisplay() {
+  const val = document.getElementById('manualDate').value;
+  if (!val) return formatDateDMY();
+  const [y, m, d] = val.split('-');
+  const dt  = new Date(parseInt(y), parseInt(m)-1, parseInt(d));
+  return dt.toLocaleDateString('en-GB') + ' • ' + dt.toLocaleDateString('en-GB',{weekday:'long'});
+}
+
+// ─── TOAST ────────────────────────────────────────────────
+function showStatus(msg, type='success', ms=2800) {
+  const el = document.getElementById('uploadStatus');
+  el.textContent = msg;
+  el.className = 'upload-status show' + (type==='error'?' error':type==='info'?' info':'');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), ms);
+}
+
+// ─── SERVER HEALTH ────────────────────────────────────────
+async function checkServer() {
+  try {
+    const r = await fetch(SERVER + '/api/health');
+    if (r.ok) {
+      serverOnline = true;
+      document.getElementById('serverDot').classList.add('online');
+      document.getElementById('serverStatus').textContent = 'Online';
+    } else {
+      throw new Error();
+    }
+  } catch(e) {
+    serverOnline = false;
+    document.getElementById('serverDot').classList.remove('online');
+    document.getElementById('serverStatus').textContent = 'Offline';
   }
 }
 
-function loadStats() {
-  fetch(`${API_URL}/api/stats`)
-    .then(r => r.json())
-    .then(stats => {
-      document.getElementById('totalCount').textContent = stats.total;
-      document.getElementById('posterCount').textContent = stats.poster;
-      document.getElementById('selfCount').textContent = stats.self;
-    });
+// ─── INITIALIZATION ───────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  checkServer();
+  setInterval(checkServer, 10000);
+
+  // Live HUD Clock
+  setInterval(() => {
+    if (autoSyncTime) {
+      document.getElementById('dispTime').textContent = formatTime12();
+    }
+    if (autoSyncDate) {
+      document.getElementById('dispDate').textContent = formatDateDMY();
+    }
+  }, 1000);
+
+  // Default Inputs Setup
+  document.getElementById('manualDate').value = formatDateISO();
+  document.getElementById('manualTime').value = currentHM();
+  document.getElementById('rsDate').value = formatDateISO();
+  document.getElementById('rsTime').value = currentHM();
+  document.getElementById('bdDate').value = formatDateISO();
+  document.getElementById('duDate').value = formatDateISO();
+
+  // Range Slider Labels
+  qualitySlider.addEventListener('input', (e) => qualityLabel.textContent = e.target.value + '%');
+  document.getElementById('rsQuality').addEventListener('input', (e) => document.getElementById('rsQualityLabel').textContent = e.target.value + '%');
+  document.getElementById('bdQuality').addEventListener('input', (e) => document.getElementById('bdQualityLabel').textContent = e.target.value + '%');
+  document.getElementById('duQuality').addEventListener('input', (e) => document.getElementById('duQualityLabel').textContent = e.target.value + '%');
+
+  // File Inputs Event Listeners
+  bulkInput.addEventListener('change', openBulkDetailsSheet);
+  
+  // Start Camera and GPS
+  initCamera();
+  initGPS();
+});
+
+function initCamera() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false })
+    .then(stream => { video.srcObject = stream; })
+    .catch(err => console.error("Camera access denied:", err));
 }
 
-function filterPhotos(event, type) {
-  currentFilter = type;
-  currentDate = '';
-  document.getElementById('dateFilter').value = '';
-  
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  event.target.classList.add('active');
-  
-  if (type === 'all') {
-    renderPhotos(allPhotos);
+function initGPS() {
+  if (!navigator.geolocation) return;
+  navigator.geolocation.watchPosition(
+    pos => {
+      const lat = pos.coords.latitude.toFixed(5);
+      const lng = pos.coords.longitude.toFixed(5);
+      gpsCoords = `${Math.abs(lat)}° ${lat >= 0 ? 'N' : 'S'}, ${Math.abs(lng)}° ${lng >= 0 ? 'E' : 'W'}`;
+      document.getElementById('dispCoords').textContent = gpsCoords;
+      document.getElementById('gpsStatus').className = 'gps-status ok';
+      document.getElementById('gpsStatus').textContent = 'OK';
+      document.getElementById('gpsText').textContent = gpsCoords;
+    },
+    err => {
+      document.getElementById('gpsStatus').className = 'gps-status searching';
+      document.getElementById('gpsStatus').textContent = 'Error';
+    },
+    { enableHighAccuracy: true }
+  );
+}
+
+// ─── UI HANDLERS & STUBS ──────────────────────────────────
+function toggleSheet() { document.getElementById('sheet').classList.toggle('open'); }
+function setDevice(el, name) {
+  document.querySelectorAll('#deviceRow .dev-opt').forEach(d => d.classList.remove('sel'));
+  el.classList.add('sel');
+  currentDevice = name;
+  document.getElementById('deviceLabel').textContent = name;
+}
+function setPhotoType(el, type) {
+  document.querySelectorAll('#photoTypeRow .photo-type-opt').forEach(d => d.classList.remove('sel'));
+  el.classList.add('sel');
+  currentPhotoType = type;
+}
+function onAutoTimeToggle() {
+  autoSyncTime = document.getElementById('dtAutoTime').checked;
+  document.getElementById('manualTime').disabled = autoSyncTime;
+}
+function onAutoDateToggle() {
+  autoSyncDate = document.getElementById('dtAutoDate').checked;
+  document.getElementById('manualDate').disabled = autoSyncDate;
+}
+function applySettings() {
+  document.getElementById('dispRoad').textContent = document.getElementById('manualRoad').value || 'Searching…';
+  document.getElementById('dispCity').textContent = document.getElementById('manualTown').value || '';
+  toggleSheet();
+  showStatus('Settings Applied');
+}
+function takeSnapshot() { showStatus('Snapshot captured'); }
+function toggleFlash() { flashEnabled = !flashEnabled; showStatus('Flash: ' + (flashEnabled ? 'ON' : 'OFF'), 'info'); }
+
+function openAlbum() { document.getElementById('albumOverlay').style.display = 'flex'; }
+function closeAlbum() { document.getElementById('albumOverlay').style.display = 'none'; }
+function openDirectUpload() { document.getElementById('directUploadOverlay').classList.add('open'); }
+function closeDirectUpload() { document.getElementById('directUploadOverlay').classList.remove('open'); }
+function openPreview() { previewOverlay.style.display = 'flex'; }
+function closePreview() { previewOverlay.style.display = 'none'; }
+
+function openBulkDetailsSheet(e) {
+  bulkFiles = Array.from(e.target.files);
+  if (!bulkFiles.length) return;
+  document.getElementById('bdCountNum').textContent = bulkFiles.length;
+  const strip = document.getElementById('bdThumbStrip');
+  strip.innerHTML = '';
+  bulkFiles.slice(0, 8).forEach(file => {
+    const img = document.createElement('img');
+    img.className = 'bd-thumb';
+    img.src = URL.createObjectURL(file);
+    strip.appendChild(img);
+  });
+  document.getElementById('bulkDetailsSheet').classList.add('open');
+}
+function closeBulkDetails() { document.getElementById('bulkDetailsSheet').classList.remove('open'); }
+
+function openRoutesSheet() { document.getElementById('routesSheet').classList.add('open'); }
+function closeRoutesSheet() { document.getElementById('routesSheet').classList.remove('open'); }
+function closeRestamp() { document.getElementById('restampSheet').classList.remove('open'); }
+
+function switchRouteTab(tab) {
+  if (tab === 'manage') {
+    document.getElementById('routePanelManage').style.display = 'block';
+    document.getElementById('routePanelAssign').style.display = 'none';
   } else {
-    renderPhotos(allPhotos.filter(p => p.type === type));
+    document.getElementById('routePanelManage').style.display = 'none';
+    document.getElementById('routePanelAssign').style.display = 'block';
   }
 }
-
-function filterByDate() {
-  const dateInput = document.getElementById('dateFilter').value;
-  currentDate = dateInput;
-  
-  let filtered = allPhotos;
-  if (currentFilter !== 'all') {
-    filtered = filtered.filter(p => p.type === currentFilter);
-  }
-  if (dateInput) {
-    filtered = filtered.filter(p => p.date === dateInput);
-  }
-  
-  renderPhotos(filtered);
+function duClear() { duFiles = []; document.getElementById('duQueue').innerHTML = ''; }
+function duDragOver(e) { e.preventDefault(); document.getElementById('duDropzone').classList.add('drag-over'); }
+function duDragLeave(e) { document.getElementById('duDropzone').classList.remove('drag-over'); }
+function duDrop(e) { e.preventDefault(); duDragLeave(e); duFilesChosen({target:{files: e.dataTransfer.files}}); }
+function duFilesChosen(e) {
+  duFiles = Array.from(e.target.files);
+  const queue = document.getElementById('duQueue');
+  queue.innerHTML = '';
+  duFiles.forEach(f => {
+    const item = document.createElement('div');
+    item.className = 'du-item';
+    item.innerHTML = `<div class="du-item-info"><div class="du-item-name">${f.name}</div></div>`;
+    queue.appendChild(item);
+  });
+  document.getElementById('duUploadBtn').disabled = duFiles.length === 0;
 }
-
-function renderPhotos(photos) {
-  const gallery = document.getElementById('gallery');
-  const emptyState = document.getElementById('emptyState');
-  
-  if (photos.length === 0) {
-    gallery.innerHTML = '';
-    emptyState.style.display = 'block';
-    return;
-  }
-  
-  emptyState.style.display = 'none';
-  filteredPhotos = photos;
-  gallery.innerHTML = photos.map((photo, idx) => `
-    <div class="photo-card" onclick="openModal(${idx})">
-      <img class="photo-img" src="${photo.filepath}" alt="Photo">
-      <button class="photo-delete" onclick="deletePhoto(event, ${photo.id})">🗑</button>
-      <div class="photo-info">
-        <div class="photo-type">${photo.type === 'self' ? '🤳 Self' : '📸 Poster'}</div>
-        <div class="photo-date">${photo.date}</div>
-        <div class="photo-time">${photo.time}</div>
-        <div class="photo-location">${photo.location}</div>
-      </div>
-    </div>
-  `).join('');
-}
-
-function openModal(idx) {
-  const photo = filteredPhotos[idx];
-  if (!photo) return;
-  const modal = document.getElementById('photoModal');
-  const modalImg = document.getElementById('modalImg');
-  const modalDetails = document.getElementById('modalDetails');
-  
-  modalImg.src = photo.filepath;
-  modalDetails.innerHTML = `
-    <div class="detail-item">
-      <div class="detail-label">Type</div>
-      <div class="detail-value">${photo.type === 'self' ? '🤳 Self Photo' : '📸 Poster Photo'}</div>
-    </div>
-    <div class="detail-item">
-      <div class="detail-label">Date</div>
-      <div class="detail-value">${photo.date}</div>
-    </div>
-    <div class="detail-item">
-      <div class="detail-label">Time</div>
-      <div class="detail-value">${photo.time}</div>
-    </div>
-    <div class="detail-item">
-      <div class="detail-label">Location</div>
-      <div class="detail-value">${photo.location}</div>
-    </div>
-    <div class="detail-item">
-      <div class="detail-label">Device</div>
-      <div class="detail-value">${photo.device}</div>
-    </div>
-  `;
-  
-  modal.classList.add('active');
-}
-
-function closeModal() {
-  document.getElementById('photoModal').classList.remove('active');
-}
-
-async function deletePhoto(event, id) {
-  event.stopPropagation();
-  if (!confirm('Delete this photo?')) return;
-  
-  try {
-    await fetch(`${API_URL}/api/photos/${id}`, { method: 'DELETE' });
-    loadPhotos();
-  } catch (err) {
-    console.error('Error deleting photo:', err);
-  }
-}
-
-async function deleteSelected() {
-  const date = prompt('Enter date to delete (YYYY-MM-DD):');
-  if (!date) return;
-  
-  if (!confirm(`Delete all photos from ${date}?`)) return;
-  
-  try {
-    const response = await fetch(`${API_URL}/api/photos/delete/date/${date}`, { method: 'DELETE' });
-    const data = await response.json();
-    alert(`✅ Deleted ${data.deleted} photos`);
-    loadPhotos();
-  } catch (err) {
-    console.error('Error:', err);
-  }
-}
-
-function exportDatabase() {
-  window.location.href = `${API_URL}/api/export`;
-}
-
-function refreshData() {
-  loadPhotos();
-}
-
-// Load photos on page load
-loadPhotos();
-
-// Auto-refresh every 30 seconds
-setInterval(loadPhotos, 30000);
+function duStartUpload() { showStatus('Uploading files…'); }
+function executeBulk(action) { showStatus(`Bulk ${action} executed`); closeBulkDetails(); }
 </script>
-
 </body>
 </html>
