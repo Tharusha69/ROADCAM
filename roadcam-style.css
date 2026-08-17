@@ -76,7 +76,7 @@ body {
   overflow: hidden;
 }
 
-/* Subtle scanlines — like the real dashcam footage */
+/* Subtle scanlines */
 #cam-wrap::before {
   content: '';
   position: absolute;
@@ -93,22 +93,18 @@ body {
   mix-blend-mode: multiply;
 }
 
-/* HUD corner brackets — signature element from Image 2 */
+/* HUD corner brackets */
 #cam-wrap::after {
   content: '';
   position: absolute;
   inset: 12px;
   background:
-    /* TL */
     linear-gradient(var(--g), var(--g)) top    left  / 24px 2px no-repeat,
     linear-gradient(var(--g), var(--g)) top    left  / 2px 24px no-repeat,
-    /* TR */
     linear-gradient(var(--g), var(--g)) top    right / 24px 2px no-repeat,
     linear-gradient(var(--g), var(--g)) top    right / 2px 24px no-repeat,
-    /* BL */
     linear-gradient(var(--g), var(--g)) bottom left  / 24px 2px no-repeat,
     linear-gradient(var(--g), var(--g)) bottom left  / 2px 24px no-repeat,
-    /* BR */
     linear-gradient(var(--g), var(--g)) bottom right / 24px 2px no-repeat,
     linear-gradient(var(--g), var(--g)) bottom right / 2px 24px no-repeat;
   pointer-events: none;
@@ -143,14 +139,12 @@ body {
   );
 }
 
-/* Device badge — ROADCAM // label style from Image 1 */
 .device-badge {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-/* Live indicator */
 .device-dot {
   width: 7px; height: 7px;
   border-radius: 50%;
@@ -173,7 +167,6 @@ body {
   letter-spacing: 0.2px;
 }
 
-/* Right-side pill buttons */
 .hud-right {
   display: flex;
   gap: 6px;
@@ -205,7 +198,6 @@ body {
   background: var(--g-dim);
 }
 
-/* Server status inside pill */
 .server-dot {
   width: 6px; height: 6px;
   border-radius: 50%;
@@ -294,7 +286,6 @@ body {
 
 /* ══════════════════════════════════════════
    TIMESTAMP STAMP OVERLAY
-   Matches the bottom-left HUD in Image 2
 ══════════════════════════════════════════ */
 .overlay-stamp {
   position: absolute;
@@ -315,7 +306,6 @@ body {
   align-items: center;
 }
 
-/* Left — big clock */
 .stamp-left .time,
 #dispTime {
   font-family: var(--font-mono);
@@ -334,7 +324,6 @@ body {
   letter-spacing: 0.3px;
 }
 
-/* Right — location */
 .stamp-right { text-align: right; }
 .stamp-right .road,
 #dispRoad {
@@ -361,7 +350,7 @@ body {
 }
 
 /* ══════════════════════════════════════════
-   ACTION BAR — bottom instrument cluster
+   ACTION BAR
 ══════════════════════════════════════════ */
 .action-bar {
   height: 114px;
@@ -375,7 +364,6 @@ body {
   flex-shrink: 0;
 }
 
-/* Subtle green glow line at the top edge */
 .action-bar::before {
   content: '';
   position: absolute;
@@ -387,7 +375,6 @@ body {
 
 .side-btns { display: flex; gap: 10px; align-items: center; }
 
-/* Round icon buttons */
 .icon-btn {
   width: 44px; height: 44px;
   border-radius: var(--r-md);
@@ -407,7 +394,6 @@ body {
   box-shadow: 0 0 10px rgba(0,230,118,0.1);
 }
 
-/* Text label buttons */
 .upload-label {
   background: var(--s2);
   border: 1px solid var(--border-dim);
@@ -457,8 +443,7 @@ input[type=file] { display: none; }
 canvas { display: none; }
 
 /* ══════════════════════════════════════════
-   SHUTTER — THE SIGNATURE ELEMENT
-   Orbital ring animation
+   SHUTTER BUTTON
 ══════════════════════════════════════════ */
 #shutter {
   width: 68px; height: 68px;
@@ -476,7 +461,6 @@ canvas { display: none; }
   transition: transform 0.12s, box-shadow 0.12s;
 }
 
-/* Center dot */
 #shutter::after {
   content: '';
   width: 20px; height: 20px;
@@ -485,7 +469,6 @@ canvas { display: none; }
   box-shadow: 0 0 10px var(--g), 0 0 20px rgba(0,230,118,0.4);
 }
 
-/* Spinning orbital ring via wrapper pseudo — we target the parent */
 #shutter::before {
   content: '';
   position: absolute;
@@ -511,9 +494,7 @@ canvas { display: none; }
 }
 
 /* ══════════════════════════════════════════
-   SETTINGS SHEET / PANELS
-   Matches the dark-frosted-glass card style
-   in Image 1 header
+   SETTINGS SHEET
 ══════════════════════════════════════════ */
 .sheet {
   position: absolute;
@@ -568,7 +549,7 @@ canvas { display: none; }
 }
 .close-btn:hover { border-color: rgba(239,83,80,0.45); color: var(--red); }
 
-/* ── Form fields ── */
+/* Form fields */
 .field-label {
   display: block;
   font-family: var(--font-mono);
@@ -606,7 +587,6 @@ input[type="date"].sfield { color-scheme: dark; color: var(--t1); }
 .row2 { display: flex; gap: 8px; }
 .row2 .sfield { flex: 1; }
 
-/* Device / type chip toggles */
 .dev-opt, .photo-type-opt {
   background: var(--s2);
   border: 1px solid var(--border-dim);
@@ -670,7 +650,6 @@ input[type="date"].sfield { color-scheme: dark; color: var(--t1); }
 }
 .dt-toggle input:checked + .dt-slider::before { transform: translateX(15px); }
 
-/* Apply button */
 .apply-btn {
   width: 100%;
   margin-top: 18px;
@@ -691,13 +670,11 @@ input[type="date"].sfield { color-scheme: dark; color: var(--t1); }
 .apply-btn:hover { box-shadow: 0 4px 28px rgba(0,230,118,0.38); transform: translateY(-1px); }
 .apply-btn:active { transform: none; }
 
-/* Bulk time controls */
 .bulk-time-controls { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
 .bulk-time-controls input { flex: 1; }
 
 /* ══════════════════════════════════════════
    PREVIEW OVERLAY
-   Full-screen with blurred bg, like Image 2
 ══════════════════════════════════════════ */
 .preview-overlay {
   position: fixed; inset: 0;
@@ -767,7 +744,6 @@ input[type="date"].sfield { color-scheme: dark; color: var(--t1); }
 
 /* ══════════════════════════════════════════
    ALBUM OVERLAY
-   Mimics the card-grid from Image 1
 ══════════════════════════════════════════ */
 .album-overlay {
   position: fixed; inset: 0;
@@ -788,7 +764,6 @@ input[type="date"].sfield { color-scheme: dark; color: var(--t1); }
   flex-shrink: 0;
 }
 
-/* Filters bar */
 .album-filters {
   display: flex;
   gap: 8px;
@@ -837,7 +812,6 @@ input[type="date"].sfield { color-scheme: dark; color: var(--t1); }
 
 .album-content { flex: 1; overflow-y: auto; padding: 12px; }
 
-/* Grid — like Image 1 frame cards */
 .album-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -858,7 +832,6 @@ input[type="date"].sfield { color-scheme: dark; color: var(--t1); }
 .album-item.selected { border-color: var(--g); }
 .album-item img { width: 100%; height: 100%; object-fit: cover; }
 
-/* POSTER / SELF badge — green pill like Image 1 */
 .album-item-type {
   position: absolute;
   top: 6px; left: 6px;
@@ -887,7 +860,6 @@ input[type="date"].sfield { color-scheme: dark; color: var(--t1); }
 .select-mode .album-item-check { display: flex; }
 .album-item.selected .album-item-check { background: var(--g); border-color: var(--g); }
 
-/* List view */
 .album-list-view { display: none; flex-direction: column; gap: 0; }
 .album-list-view.active { display: flex; }
 .list-item {
@@ -959,7 +931,6 @@ input[type="date"].sfield { color-scheme: dark; color: var(--t1); }
   letter-spacing: 0.5px;
 }
 
-/* Select bar */
 .select-bar {
   display: none;
   padding: 10px 16px;
@@ -991,7 +962,6 @@ input[type="date"].sfield { color-scheme: dark; color: var(--t1); }
   letter-spacing: 0.4px;
 }
 
-/* DB action row */
 .db-actions {
   display: flex;
   gap: 8px;
@@ -1023,8 +993,7 @@ input[type="date"].sfield { color-scheme: dark; color: var(--t1); }
 .db-btn.danger:hover { background: rgba(239,83,80,0.12); }
 
 /* ══════════════════════════════════════════
-   RE-STAMP SHEET (modal bottom)
-   Matches image 2 side-panel aesthetic
+   RE-STAMP SHEET
 ══════════════════════════════════════════ */
 .restamp-sheet {
   position: fixed; inset: 0;
@@ -1057,7 +1026,6 @@ input[type="date"].sfield { color-scheme: dark; color: var(--t1); }
 .rs-step.done { background: var(--g); }
 .rs-step.active { background: rgba(0,230,118,0.4); }
 
-/* Autofill badge */
 .autofill-badge {
   display: inline-flex;
   align-items: center;
@@ -1096,7 +1064,6 @@ input[type="date"].sfield { color-scheme: dark; color: var(--t1); }
   border: 1px solid var(--border-dim);
 }
 
-/* Section card — like the metadata panel in Image 2 */
 .rs-section {
   background: var(--s1);
   border: 1px solid var(--border-dim);
@@ -1123,7 +1090,6 @@ input[type="date"].sfield { color-scheme: dark; color: var(--t1); }
   background: rgba(0,230,118,0.1);
 }
 
-/* Action row */
 .rs-action-row { display: grid; gap: 8px; margin-top: 16px; }
 .rs-action-row.dual   { grid-template-columns: 1fr 1fr; }
 .rs-action-row.triple { grid-template-columns: 1fr 1fr 1fr; }
@@ -1158,7 +1124,6 @@ input[type="date"].sfield { color-scheme: dark; color: var(--t1); }
 }
 .rs-act-cancel:hover { border-color: rgba(239,83,80,0.3); color: var(--red); }
 
-/* Progress */
 .rs-progress-wrap { display: none; margin-top: 12px; }
 .rs-progress-label {
   font-family: var(--font-mono);
@@ -1435,7 +1400,6 @@ input[type="date"].sfield { color-scheme: dark; color: var(--t1); }
 
 /* ══════════════════════════════════════════
    STATUS TOAST
-   Slim bar like Image 1's status indicators
 ══════════════════════════════════════════ */
 .upload-status {
   position: fixed;
