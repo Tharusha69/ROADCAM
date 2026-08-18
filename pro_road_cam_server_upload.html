@@ -1404,17 +1404,7 @@ document.getElementById('uploadServerBtn').onclick = async () => {
 };
 
 // ─── ALBUM ────────────────────────────────────────────────
-async function loadAlbum() {
-  document.getElementById('albumLoading').style.display = 'block';
-  document.getElementById('albumGrid').style.display    = 'none';
-  document.getElementById('albumListView').innerHTML    = '';
-  document.getElementById('albumEmpty').style.display   = 'none';
-
-  try {
-    const r = await fetch(SERVER + '/api/photos');
-    albumPhotos = await r.json();
-    document.getElementById('photoCount').textContent = albumPhotos.length;
-    async function loadAlbum() {
+   async function loadAlbum() {
   document.getElementById('albumLoading').style.display = 'block';
   document.getElementById('albumGrid').style.display    = 'none';
   document.getElementById('albumListView').innerHTML    = '';
@@ -1425,13 +1415,6 @@ async function loadAlbum() {
     albumPhotos = await r.json();
     document.getElementById('photoCount').textContent = albumPhotos.length;
     prefetchAlbumImages(albumPhotos); // ← ADD THIS LINE
-    renderAlbum();
-  } catch(e) {
-    showStatus('❌ Could not load photos', 'error');
-    document.getElementById('albumLoading').style.display = 'none';
-    document.getElementById('albumEmpty').style.display   = 'block';
-  }
-}
     renderAlbum();
   } catch(e) {
     showStatus('❌ Could not load photos', 'error');
