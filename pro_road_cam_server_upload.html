@@ -1847,36 +1847,39 @@ function openSingleRestamp(photo) {
   document.getElementById('rsDate').value     = formatDateISO(now);
   document.getElementById('rsDevice').value   = currentDevice;
 
-document.getElementById('restampPreviews').innerHTML = `
-  <div class="frame-photo-wrap" onclick="openFrameDetail(${photo.id})" style="cursor:pointer">
-    <img src="${SERVER}${photo.filepath}" class="frame-photo-img">
-    <div class="frame-photo-purple-blend"></div>
-    <div class="frame-photo-bottom-info">
-      <div class="frame-type-badge">${typeBadge}</div>
-      <span class="frame-number-badge">${frameNum}</span>
-      <div class="frame-meta-row">
-        <div class="frame-meta-item">
-          <span class="frame-meta-label">TYPE</span>
-          <span class="frame-meta-value">${photo.type === 'self' ? 'Self / Front' : 'Poster / Front'}</span>
+const frameNum = photo.id ? '#' + String(photo.id).padStart(4, '0') : '';
+  const typeBadge = photo.type === 'self' ? '🤳 SELF' : '📸 POSTER';
+
+  document.getElementById('restampPreviews').innerHTML = `
+    <div class="frame-photo-wrap" onclick="openFrameDetail(${photo.id})" style="cursor:pointer">
+      <img src="${SERVER}${photo.filepath}" class="frame-photo-img">
+      <div class="frame-photo-purple-blend"></div>
+      <div class="frame-photo-bottom-info">
+        <div class="frame-type-badge">${typeBadge}</div>
+        <span class="frame-number-badge">${frameNum}</span>
+        <div class="frame-meta-row">
+          <div class="frame-meta-item">
+            <span class="frame-meta-label">TYPE</span>
+            <span class="frame-meta-value">${photo.type === 'self' ? 'Self / Front' : 'Poster / Front'}</span>
+          </div>
+          <div class="frame-meta-item">
+            <span class="frame-meta-label">TIMESTAMP</span>
+            <span class="frame-meta-value">${photo.date || ''} · ${photo.time || ''}</span>
+          </div>
+          <div class="frame-meta-item">
+            <span class="frame-meta-label">LOCATION</span>
+            <span class="frame-meta-value">${photo.location || 'Unknown'}</span>
+          </div>
+          <div class="frame-meta-item">
+            <span class="frame-meta-label">DEVICE</span>
+            <span class="frame-meta-value">${photo.device || currentDevice}</span>
+          </div>
+          ${photo.route ? `<div class="frame-meta-item"><span class="frame-meta-label">ROUTE</span><span class="frame-meta-value">${photo.route}</span></div>` : ''}
         </div>
-        <div class="frame-meta-item">
-          <span class="frame-meta-label">TIMESTAMP</span>
-          <span class="frame-meta-value">${photo.date || ''} · ${photo.time || ''}</span>
-        </div>
-        <div class="frame-meta-item">
-          <span class="frame-meta-label">LOCATION</span>
-          <span class="frame-meta-value">${photo.location || 'Unknown'}</span>
-        </div>
-        <div class="frame-meta-item">
-          <span class="frame-meta-label">DEVICE</span>
-          <span class="frame-meta-value">${photo.device || currentDevice}</span>
-        </div>
-        ${photo.route ? `<div class="frame-meta-item"><span class="frame-meta-label">ROUTE</span><span class="frame-meta-value">${photo.route}</span></div>` : ''}
       </div>
+      <div class="frame-photo-tap-hint">👆 Tap to expand</div>
     </div>
-    <div class="frame-photo-tap-hint">👆 Tap to expand</div>
-  </div>
-`;
+  `;
 
   document.querySelectorAll('.restamp-sheet .photo-type-opt').forEach(el => el.classList.remove('sel'));
   document.querySelectorAll('.restamp-sheet .photo-type-opt')[photo.type === 'self' ? 1 : 0].classList.add('sel');
