@@ -1404,7 +1404,7 @@ document.getElementById('uploadServerBtn').onclick = async () => {
 };
 
 // ─── ALBUM ────────────────────────────────────────────────
-   async function loadAlbum() {
+async function loadAlbum() {
   document.getElementById('albumLoading').style.display = 'block';
   document.getElementById('albumGrid').style.display    = 'none';
   document.getElementById('albumListView').innerHTML    = '';
@@ -1414,7 +1414,6 @@ document.getElementById('uploadServerBtn').onclick = async () => {
     const r = await fetch(SERVER + '/api/photos');
     albumPhotos = await r.json();
     document.getElementById('photoCount').textContent = albumPhotos.length;
-    prefetchAlbumImages(albumPhotos); // ← ADD THIS LINE
     renderAlbum();
   } catch(e) {
     showStatus('❌ Could not load photos', 'error');
@@ -1429,15 +1428,6 @@ function openAlbum() {
   document.getElementById('selectBar').classList.remove('active');
   document.getElementById('albumOverlay').style.display = 'flex';
   loadAlbum();
-}
-
-// Album photos prefetch — visible ones first
-function prefetchAlbumImages(photos) {
-  // First 9 (visible screen) eager load
-  photos.slice(0, 9).forEach(p => {
-    const img = new Image();
-    img.src = SERVER + p.filepath;
-  });
 }
 function closeAlbum() { document.getElementById('albumOverlay').style.display = 'none'; }
 // ─── ROUTES MANAGER ───────────────────────────────────────
@@ -1639,24 +1629,15 @@ async function deleteRoute(id) {
     showStatus('🗑 Route deleted');
   } catch(e) { showStatus('❌ Error', 'error'); }
 }
+
+
 function renderAlbum() {
   document.getElementById('albumLoading').style.display = 'none';
   const grid  = document.getElementById('albumGrid');
   const list  = document.getElementById('albumListView');
   const empty = document.getElementById('albumEmpty');
-// REPLACE existing grid item innerHTML with this:
-el.innerHTML = `
-  <div class="album-thumb-wrap">
-    <div class="album-thumb-skeleton"></div>
-    <img src="${SERVER}${photo.filepath}"
-         loading="lazy"
-         decoding="async"
-         onload="this.previousElementSibling.style.display='none';this.style.opacity='1'"
-         style="opacity:0;transition:opacity 0.25s ease">
-  </div>
-  <div class="album-item-type">${photo.type === 'self' ? '🤳' : '📸'}</div>
-  <div class="album-item-check">✓</div>
-`;
+  grid.innerHTML = ''; list.innerHTML = '';
+
   const dateFilter  = document.getElementById('filterDate').value;
   const routeFilter = (document.getElementById('filterRoute').value || '').toLowerCase().trim();
   filteredPhotos    = albumPhotos.filter(p => {
@@ -1676,26 +1657,39 @@ el.innerHTML = `
   if (currentView === 'grid') {
     grid.style.display = 'grid';
     list.classList.remove('active');
+    
     filteredPhotos.forEach(photo => {
       const el = document.createElement('div');
       const wasStamped = stampedPhotoIds.has(photo.id);
       el.className = 'album-item' + (selectedIds.has(photo.id) ? ' selected' : '');
       if (wasStamped) el.style.boxShadow = '0 0 0 2px #a855f7, inset 0 0 0 1px #a855f744';
+      
+      // අලුත් skeleton loader එක සහිත innerHTML එක මෙතැනින් ඇතුළත් කර ඇත
       el.innerHTML = `
-        <img src="${SERVER}${photo.filepath}" loading="lazy">
+        <div class="album-thumb-wrap">
+          <div class="album-thumb-skeleton"></div>
+          <img src="${SERVER}${photo.filepath}"
+               loading="lazy"
+               decoding="async"
+               onload="this.previousElementSibling.style.display='none';this.style.opacity='1'"
+               style="opacity:0;transition:opacity 0.25s ease">
+        </div>
         <div class="album-item-type">${photo.type === 'self' ? '🤳' : '📸'}</div>
         <div class="album-item-check">✓</div>
       `;
+      
       el.onclick = () => onPhotoClick(photo, el);
       grid.appendChild(el);
     });
   } else {
     grid.style.display = 'none';
     list.classList.add('active');
+    
     filteredPhotos.forEach(photo => {
       const el = document.createElement('div');
       el.className = 'list-item' + (selectedIds.has(photo.id) ? ' selected' : '');
       if (stampedPhotoIds.has(photo.id)) el.style.borderLeft = '3px solid #a855f7';
+      
       el.innerHTML = `
         <div class="list-item-thumb">
           <img src="${SERVER}${photo.filepath}" loading="lazy">
@@ -1708,6 +1702,7 @@ el.innerHTML = `
           <div class="list-item-time">📱 ${photo.device}</div>
         </div>
       `;
+      
       el.onclick = () => onPhotoClick(photo, el);
       list.appendChild(el);
     });
@@ -1715,6 +1710,7 @@ el.innerHTML = `
 
   updateSelectModeUI();
 }
+
 
 
 
@@ -2320,14 +2316,12 @@ async function duStartUpload() {
   const town    = document.getElementById('duTown').value;
   const prov    = document.getElementById('duProvince').value;
   const isoDate = document.getElementById('duDate').value;
-  
   let dateDisplay = formatDateDMY();
   if (isoDate) {
     const [y,m,d] = isoDate.split('-');
     const dt = new Date(parseInt(y),parseInt(m)-1,parseInt(d));
     dateDisplay = dt.toLocaleDateString('en-GB') + ' • ' + dt.toLocaleDateString('en-GB',{weekday:'long'});
   }
-  
   const device   = document.getElementById('duDevice').value || currentDevice;
   const quality  = parseInt(document.getElementById('duQuality').value) / 100;
   const color    = themeColors[document.getElementById('duTheme').value] || '#00d97e';
@@ -2335,19 +2329,15 @@ async function duStartUpload() {
 
   const btn = document.getElementById('duUploadBtn');
   btn.disabled = true;
-  
   const progressBar  = document.getElementById('duProgressBar');
   const progressFill = document.getElementById('duProgressFill');
   progressBar.style.display = 'block';
-  progressFill.style.width = '0%';
-  
   showStatus('⏳ Uploading ' + duFiles.length + ' photo(s)…', 'info', 120000);
 
   let done = 0;
   for (let i = 0; i < duFiles.length; i++) {
     duFiles[i].status = 'uploading';
     renderDuQueue();
-    
     try {
       const img = await new Promise((res, rej) => {
         const r = new FileReader();
@@ -2367,12 +2357,10 @@ async function duStartUpload() {
       const origCanvas = document.createElement('canvas');
       origCanvas.width = tw; origCanvas.height = th;
       origCanvas.getContext('2d').drawImage(img, 0, 0, tw, th);
-      
-      const origBlob = await new Promise(res => origCanvas.toBlob(res, 'image/jpeg', 1.0)); // Note: You might want to use the 'quality' variable here instead of 1.0 if compression is needed.
+      const origBlob = await new Promise(res => origCanvas.toBlob(res, 'image/jpeg', 1.0));
       const now   = new Date();
       const fd    = new FormData();
       const fname = 'du_' + Date.now() + '.jpg';
-      
       fd.append('photo', new File([origBlob], fname, {type:'image/jpeg'}));
       fd.append('type',      bdType);
       fd.append('date',      isoDate || now.toISOString().split('T')[0]);
@@ -2384,34 +2372,12 @@ async function duStartUpload() {
 
       const r = await fetch(SERVER + '/api/upload', {method:'POST', body:fd});
       const d = await r.json();
-      
       duFiles[i].status = d.success ? 'done' : 'error';
       if (d.success) done++;
-      
     } catch(e) {
       duFiles[i].status = 'error';
       console.error('DU upload error', e);
     }
-    
-    // Update progress bar and UI for each completed file
-    progressFill.style.width = Math.round(((i + 1) / duFiles.length) * 100) + '%';
-    renderDuQueue();
-  }
-
-  // Upload process finished, clean up UI
-  btn.disabled = false;
-  setTimeout(() => { 
-    progressBar.style.display = 'none'; 
-    progressFill.style.width = '0%'; 
-  }, 2000);
-  
-  if (done === duFiles.length) {
-    showStatus(`✅ Successfully uploaded all ${done} photo(s).`, 'success');
-  } else {
-    showStatus(`⚠️ Uploaded ${done} of ${duFiles.length} photo(s). Check errors.`, 'warning');
-  }
-}
-
     progressFill.style.width = ((i+1)/duFiles.length*100) + '%';
     renderDuQueue();
     await new Promise(r => setTimeout(r, 400));
