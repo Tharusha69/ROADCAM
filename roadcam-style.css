@@ -1683,3 +1683,131 @@ input[type="date"].sfield { color-scheme: dark; color: var(--t1); }
   font-size: 8px; color: rgba(255,255,255,0.8);
   padding: 2px 4px; text-align: center;
 }
+/* ══════════════════════════════════════════
+   FRAME PHOTO — Purple Blend Effect (v2)
+══════════════════════════════════════════ */
+.frame-photo-wrap {
+  position: relative;
+  width: 100%;
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  margin-bottom: 16px;
+  background: #000;
+}
+
+.frame-photo-img {
+  width: 100%;
+  max-height: 240px;
+  object-fit: cover;
+  display: block;
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+}
+
+/* Purple gradient bottom fade */
+.frame-photo-purple-blend {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 65%;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(88, 0, 160, 0.35) 45%,
+    rgba(60, 0, 120, 0.82) 80%,
+    rgba(30, 0, 80, 0.96) 100%
+  );
+  pointer-events: none;
+  border-radius: 0 0 var(--r-lg) var(--r-lg);
+}
+
+/* Radial purple glow from bottom center */
+.frame-photo-purple-blend::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 80%; height: 120px;
+  background: radial-gradient(
+    ellipse at 50% 100%,
+    rgba(156, 39, 176, 0.5) 0%,
+    rgba(103, 0, 200, 0.2) 55%,
+    transparent 80%
+  );
+  mix-blend-mode: screen;
+}
+
+/* Info overlaid on bottom of photo */
+.frame-photo-bottom-info {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  padding: 16px 16px 18px;
+}
+
+.frame-photo-bottom-info .frame-type-badge {
+  background: rgba(156, 39, 176, 0.22);
+  border: 1px solid rgba(186, 104, 200, 0.5);
+  color: #ce93d8;
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: var(--r-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 6px;
+}
+
+.frame-photo-bottom-info .frame-number-badge {
+  font-family: var(--font-mono);
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--g);
+  letter-spacing: -1px;
+  line-height: 1;
+  margin: 0 0 10px;
+  text-shadow: 0 0 24px rgba(0,230,118,0.45);
+  display: block;
+}
+
+.frame-photo-bottom-info .frame-meta-row {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 0;
+}
+
+.frame-photo-bottom-info .frame-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.frame-photo-bottom-info .frame-meta-label {
+  font-family: var(--font-mono);
+  font-size: 7.5px;
+  font-weight: 700;
+  color: rgba(206, 147, 216, 0.65);
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.frame-photo-bottom-info .frame-meta-label::before {
+  content: '';
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: #ce93d8;
+  flex-shrink: 0;
+}
+
+.frame-photo-bottom-info .frame-meta-value {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.3;
+}
