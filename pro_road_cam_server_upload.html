@@ -2320,12 +2320,14 @@ async function duStartUpload() {
   const town    = document.getElementById('duTown').value;
   const prov    = document.getElementById('duProvince').value;
   const isoDate = document.getElementById('duDate').value;
+  
   let dateDisplay = formatDateDMY();
   if (isoDate) {
     const [y,m,d] = isoDate.split('-');
     const dt = new Date(parseInt(y),parseInt(m)-1,parseInt(d));
     dateDisplay = dt.toLocaleDateString('en-GB') + ' • ' + dt.toLocaleDateString('en-GB',{weekday:'long'});
   }
+  
   const device   = document.getElementById('duDevice').value || currentDevice;
   const quality  = parseInt(document.getElementById('duQuality').value) / 100;
   const color    = themeColors[document.getElementById('duTheme').value] || '#00d97e';
@@ -2333,15 +2335,19 @@ async function duStartUpload() {
 
   const btn = document.getElementById('duUploadBtn');
   btn.disabled = true;
+  
   const progressBar  = document.getElementById('duProgressBar');
   const progressFill = document.getElementById('duProgressFill');
   progressBar.style.display = 'block';
+  progressFill.style.width = '0%';
+  
   showStatus('⏳ Uploading ' + duFiles.length + ' photo(s)…', 'info', 120000);
 
   let done = 0;
   for (let i = 0; i < duFiles.length; i++) {
     duFiles[i].status = 'uploading';
     renderDuQueue();
+    
     try {
       const img = await new Promise((res, rej) => {
         const r = new FileReader();
@@ -2361,10 +2367,12 @@ async function duStartUpload() {
       const origCanvas = document.createElement('canvas');
       origCanvas.width = tw; origCanvas.height = th;
       origCanvas.getContext('2d').drawImage(img, 0, 0, tw, th);
-      const origBlob = await new Promise(res => origCanvas.toBlob(res, 'image/jpeg', 1.0));
+      
+      const origBlob = await new Promise(res => origCanvas.toBlob(res, 'image/jpeg', 1.0)); // Note: You might want to use the 'quality' variable here instead of 1.0 if compression is needed.
       const now   = new Date();
       const fd    = new FormData();
       const fname = 'du_' + Date.now() + '.jpg';
+      
       fd.append('photo', new File([origBlob], fname, {type:'image/jpeg'}));
       fd.append('type',      bdType);
       fd.append('date',      isoDate || now.toISOString().split('T')[0]);
@@ -2376,12 +2384,34 @@ async function duStartUpload() {
 
       const r = await fetch(SERVER + '/api/upload', {method:'POST', body:fd});
       const d = await r.json();
+      
       duFiles[i].status = d.success ? 'done' : 'error';
       if (d.success) done++;
+      
     } catch(e) {
       duFiles[i].status = 'error';
       console.error('DU upload error', e);
     }
+    
+    // Update progress bar and UI for each completed file
+    progressFill.style.width = Math.round(((i + 1) / duFiles.length) * 100) + '%';
+    renderDuQueue();
+  }
+
+  // Upload process finished, clean up UI
+  btn.disabled = false;
+  setTimeout(() => { 
+    progressBar.style.display = 'none'; 
+    progressFill.style.width = '0%'; 
+  }, 2000);
+  
+  if (done === duFiles.length) {
+    showStatus(`✅ Successfully uploaded all ${done} photo(s).`, 'success');
+  } else {
+    showStatus(`⚠️ Uploaded ${done} of ${duFiles.length} photo(s). Check errors.`, 'warning');
+  }
+}
+
     progressFill.style.width = ((i+1)/duFiles.length*100) + '%';
     renderDuQueue();
     await new Promise(r => setTimeout(r, 400));
