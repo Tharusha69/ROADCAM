@@ -52,12 +52,18 @@ db.serialize(() => {
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+// පවතින middleware එක වෙනුවට මෙය යොදන්න (uploadsDir භාවිතයෙන්):
 app.use("/uploads", (req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
   next();
-}, express.static(uploadsDir));
+}, express.static(uploadsDir, {
+  maxAge: '7d',          // දින 7ක් Cache කරගනී
+  etag: true,
+  lastModified: true
+}));
 app.use(express.static(__dirname));
+
 
 // Multer configuration
 const storage = multer.diskStorage({
