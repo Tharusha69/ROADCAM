@@ -323,7 +323,11 @@
   </div>
 </div>
 
-<!-- BULK DETAILS SHEET -->
+<!-- ════════════════════════════════════════════════════
+     BULK DETAILS SHEET  — v8.6
+     Opened immediately when user taps BULK and picks files.
+     Shows thumbnails + details form + Save / Share actions.
+     ════════════════════════════════════════════════════ -->
 <div class="bulk-details-sheet" id="bulkDetailsSheet">
   <div class="bulk-details-inner">
     <div class="sheet-handle"></div>
@@ -332,14 +336,17 @@
       <button class="close-btn" onclick="closeBulkDetails()">✕</button>
     </div>
 
+    <!-- file count badge -->
     <div class="bd-count-badge">
       <span class="bd-count-icon">🖼</span>
       <span class="bd-count-text">Photos selected</span>
       <span class="bd-count-num" id="bdCountNum">0</span>
     </div>
 
+    <!-- thumbnail strip (up to 8 shown) -->
     <div class="bd-thumb-strip" id="bdThumbStrip"></div>
 
+    <!-- ── DETAILS SECTION ── -->
     <div class="rs-section">
       <div class="rs-section-title">📍 Details</div>
       <span class="field-label" style="margin-top:0">Photo Type</span>
@@ -360,6 +367,7 @@
       </div>
     </div>
 
+    <!-- ── TIME SECTION ── -->
     <div class="rs-section">
       <div class="rs-section-title">🕐 Time Window</div>
       <div class="row2">
@@ -377,6 +385,7 @@
       </div>
     </div>
 
+    <!-- ── DATE / DEVICE / THEME ── -->
     <div class="rs-section">
       <div class="rs-section-title">📅 Date &amp; Device</div>
       <div class="row2">
@@ -410,11 +419,13 @@
       </div>
     </div>
 
+    <!-- progress (shown while stamping) -->
     <div class="bd-progress-wrap" id="bdProgressWrap">
       <div class="bd-progress-label" id="bdProgressLabel">Processing 0 / 0…</div>
       <div class="bd-progress-bar"><div class="bd-progress-fill" id="bdProgressFill"></div></div>
     </div>
 
+    <!-- ── ACTIONS ── -->
     <div class="bd-action-row" id="bdActionRow">
       <button class="bd-act-btn bd-act-save"  id="bdSaveBtn"  onclick="executeBulk('save')">⬇ Save to Device</button>
       <button class="bd-act-btn bd-act-share" id="bdShareBtn" onclick="executeBulk('share')">↗ Share</button>
@@ -499,7 +510,6 @@
     <button class="du-clear-btn" style="width:100%;margin-top:8px" onclick="cancelPendingSave()">Cancel</button>
   </div>
 </div>
-
 <!-- ROUTES MANAGER SHEET -->
 <div class="restamp-sheet" id="routesSheet">
   <div class="restamp-inner">
@@ -509,6 +519,7 @@
       <button class="close-btn" onclick="closeRoutesSheet()">✕</button>
     </div>
 
+    <!-- Mode tabs -->
     <div style="display:flex;gap:6px;margin-bottom:14px">
       <button id="routeTabManage" onclick="switchRouteTab('manage')"
         style="flex:1;padding:8px;border-radius:8px;border:none;font-size:10px;font-weight:800;cursor:pointer;background:var(--g);color:#000">
@@ -561,11 +572,9 @@
 
   </div>
 </div>
-
 <!-- FRAME DETAIL OVERLAY -->
 <div id="frameDetailOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);backdrop-filter:blur(12px);z-index:500;align-items:center;justify-content:center;padding:16px">
 </div>
-
 <!-- STATUS TOAST -->
 <div class="upload-status" id="uploadStatus"></div>
 
@@ -609,7 +618,7 @@ let duFiles          = [];
 let duType           = 'poster';
 
 // BULK DETAILS state
-let bulkFiles        = [];
+let bulkFiles        = [];  // Array of File objects from the BULK button
 let bdType           = 'poster';
 
 let autoReloadMins   = 0;
@@ -625,7 +634,9 @@ let gpsTown     = '';
 let gpsProvince = '';
 const themeColors = {green:'#00d97e',blue:'#3b82f6',amber:'#f59e0b',red:'#ef4444',white:'#ffffff'};
 
-// ─── PLATFORM DETECTION ───────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+//  PLATFORM DETECTION
+// ═══════════════════════════════════════════════════════════
 const UA         = navigator.userAgent || '';
 const IS_IOS     = /iPad|iPhone|iPod/.test(UA) ||
                    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -822,8 +833,10 @@ function toggleFlash() {
   btn.style.borderColor = flashEnabled ? '#00d97e' : 'rgba(255,255,255,0.1)';
 }
 
+// ─── INIT ─────────────────────────────────────────────────
 // ─── AUTO-FILL GPS INTO SHEETS ────────────────────────────
 function applyGpsToSheets() {
+  // Direct-upload sheet
   const duRoadEl = document.getElementById('duRoad');
   if (duRoadEl && !duRoadEl.value) duRoadEl.value = gpsRoad;
   const duTownEl = document.getElementById('duTown');
@@ -831,6 +844,7 @@ function applyGpsToSheets() {
   const duProvEl = document.getElementById('duProvince');
   if (duProvEl && !duProvEl.value) duProvEl.value = gpsProvince;
 
+  // Bulk-details sheet
   const bdRoadEl = document.getElementById('bdRoad');
   if (bdRoadEl && !bdRoadEl.value) bdRoadEl.value = gpsRoad;
   const bdTownEl = document.getElementById('bdTown');
@@ -838,7 +852,6 @@ function applyGpsToSheets() {
   const bdProvEl = document.getElementById('bdProvince');
   if (bdProvEl && !bdProvEl.value) bdProvEl.value = gpsProvince;
 }
-
 async function initApp() {
   const now = new Date();
   document.getElementById('manualTime').value    = formatTime24(now);
@@ -867,17 +880,17 @@ async function initApp() {
       const r = await fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat='+lat+'&lon='+lon);
       const d = await r.json();
       const a = d.address || {};
-      const road = a.road || a.suburb || 'Unnamed Road';
+const road = a.road || a.suburb || 'Unnamed Road';
       const city = a.city  || a.town  || a.village || '';
       const prov = a.state || '';
-      
+      // Cache for auto-fill in sheets
       gpsRoad     = road;
       gpsTown     = city;
       gpsProvince = prov;
       document.getElementById('manualRoad').value     = road;
       document.getElementById('manualTown').value     = city;
       document.getElementById('manualProvince').value = prov;
-      
+      // Push into any already-open sheets
       applyGpsToSheets();
       document.getElementById('dispRoad').textContent = road.toUpperCase();
       document.getElementById('dispCity').textContent = [city,prov].filter(Boolean).join(', ');
@@ -914,8 +927,8 @@ fileInput.onchange = e => {
 };
 
 // ─── BULK INPUT → opens Bulk Details Sheet ────────────────
+
 let _pendingAutoUploadFiles = null;
-let _autoUploadTimer = null;
 
 bulkInput.onchange = async e => {
   const files = Array.from(e.target.files || []);
@@ -929,6 +942,7 @@ bulkInput.onchange = async e => {
 
   if (serverOnline) {
     _pendingAutoUploadFiles = files;
+    // Route select නොකළත් 8 seconds ඇතුළත auto-start
     _autoUploadTimer = setTimeout(() => {
       if (_pendingAutoUploadFiles) {
         autoServerUpload(_pendingAutoUploadFiles);
@@ -937,17 +951,20 @@ bulkInput.onchange = async e => {
     }, 8000);
   }
 };
-
-// ─── BULK DETAILS SHEET FUNCTIONS ─────────────────────────
+// ═══════════════════════════════════════════════════════════
+//  BULK DETAILS SHEET  — open / close / type / execute
+// ═══════════════════════════════════════════════════════════
 function openBulkDetailsSheet(files) {
   bulkFiles = files;
   bdType    = 'poster';
   const now = new Date();
 
+  // Reset type buttons
   document.querySelectorAll('#bdPhotoTypeRow .photo-type-opt').forEach((el,i) => {
     el.classList.toggle('sel', i === 0);
   });
 
+  // Pre-fill from live settings
   document.getElementById('bdRoad').value     = document.getElementById('manualRoad').value || gpsRoad;
   document.getElementById('bdTown').value     = document.getElementById('manualTown').value || gpsTown;
   document.getElementById('bdProvince').value = document.getElementById('manualProvince').value || gpsProvince;
@@ -958,9 +975,11 @@ function openBulkDetailsSheet(files) {
   document.getElementById('bdQuality').value  = qualitySlider.value;
   document.getElementById('bdQualityLabel').textContent = qualitySlider.value + '%';
 
+  // Count badge
   document.getElementById('bdCountNum').textContent = files.length;
   document.getElementById('bdTitle').textContent = 'Bulk — Add Details (' + files.length + ' photos)';
 
+  // Thumbnail strip (show up to 8)
   const strip = document.getElementById('bdThumbStrip');
   strip.innerHTML = '';
   const preview = files.slice(0, 8);
@@ -971,6 +990,7 @@ function openBulkDetailsSheet(files) {
     strip.appendChild(img);
   });
 
+  // Reset progress
   document.getElementById('bdProgressWrap').style.display = 'none';
   document.getElementById('bdProgressFill').style.width   = '0%';
   setBdActionBtnsEnabled(true);
@@ -978,7 +998,10 @@ function openBulkDetailsSheet(files) {
   document.getElementById('bulkDetailsSheet').classList.add('open');
 }
 
+let _autoUploadTimer = null;
+
 function onBdRouteChange() {
+  // Route select කළාම pending upload ඇත්නම් දැනම start
   if (_pendingAutoUploadFiles && serverOnline) {
     clearTimeout(_autoUploadTimer);
     _autoUploadTimer = null;
@@ -990,6 +1013,7 @@ function onBdRouteChange() {
 
 function closeBulkDetails() {
   document.getElementById('bulkDetailsSheet').classList.remove('open');
+  // revoke thumbnail object URLs to free memory
   document.querySelectorAll('#bdThumbStrip .bd-thumb').forEach(img => {
     URL.revokeObjectURL(img.src);
   });
@@ -1009,6 +1033,7 @@ function setBdActionBtnsEnabled(enabled) {
   document.getElementById('bdActionRow').style.pointerEvents = enabled ? '' : 'none';
 }
 
+// ─── EXECUTE BULK (Save or Share) ─────────────────────────
 async function executeBulk(action) {
   if (!bulkFiles.length) return;
 
@@ -1022,6 +1047,7 @@ async function executeBulk(action) {
   const startStr   = document.getElementById('bdTimeStart').value || '09:00';
   const endStr     = document.getElementById('bdTimeEnd').value   || currentHM();
 
+  // Build date display string
   let dateDisplay = formatDateDMY();
   if (isoDate) {
     const [y,m,d] = isoDate.split('-');
@@ -1033,6 +1059,7 @@ async function executeBulk(action) {
   const timeSlots = randomTimeSlots(hmToMins(startStr), hmToMins(endStr), n);
   const city      = [town, prov].filter(Boolean).join(', ');
 
+  // Show progress
   const progressWrap  = document.getElementById('bdProgressWrap');
   const progressFill  = document.getElementById('bdProgressFill');
   const progressLabel = document.getElementById('bdProgressLabel');
@@ -1082,6 +1109,7 @@ async function executeBulk(action) {
       const fname = 'RoadCam_' + isoDate + '_' + timeSlots[i].replace(/[:\s]/g,'-') + '_' + (i+1) + '.jpg';
       stampedFiles.push(new File([blob], fname, {type:'image/jpeg'}));
 
+      // For "save": download each file immediately one-by-one
       if (action === 'save') {
         downloadBlob(blob, fname);
         await new Promise(r => setTimeout(r, IS_IOS ? 1400 : 500));
@@ -1106,6 +1134,7 @@ async function executeBulk(action) {
     await new Promise(r => setTimeout(r, 800));
     closeBulkDetails();
   } else {
+    // Share action
     if (stampedFiles.length === 0) {
       showStatus('❌ No photos could be processed', 'error');
       setBdActionBtnsEnabled(true);
@@ -1254,51 +1283,9 @@ async function uploadToServer(blob, originalFileObj = null) {
   }
 }
 
-async function autoServerUpload(files) {
-  if (!serverOnline || !files || !files.length) return;
-  showStatus('⬆️ Auto-uploading ' + files.length + ' photo(s) to server…', 'info', 5000);
-  
-  const road     = document.getElementById('bdRoad').value || document.getElementById('manualRoad').value || gpsRoad || 'Unknown Road';
-  const town     = document.getElementById('bdTown').value || document.getElementById('manualTown').value || gpsTown;
-  const prov     = document.getElementById('bdProvince').value || document.getElementById('manualProvince').value || gpsProvince;
-  const routeVal = document.getElementById('bdRoute').value;
-  const location = [road, town, prov].filter(Boolean).join(', ');
-  const dateVal  = document.getElementById('bdDate').value || formatDateISO();
-  const startStr = document.getElementById('bdTimeStart').value || '09:00';
-  const endStr   = document.getElementById('bdTimeEnd').value   || currentHM();
-  
-  const timeSlots = randomTimeSlots(hmToMins(startStr), hmToMins(endStr), files.length);
-
-  let successCount = 0;
-  for (let i = 0; i < files.length; i++) {
-    const file = files[i];
-    const fd = new FormData();
-    fd.append('photo', file);
-    fd.append('type', bdType || 'poster');
-    fd.append('date', dateVal);
-    fd.append('time', timeSlots[i]);
-    fd.append('timestamp', new Date().toLocaleString());
-    fd.append('location', location);
-    fd.append('device', currentDevice);
-    if (routeVal) fd.append('route', routeVal);
-
-    try {
-      const r = await fetch(SERVER + '/api/upload', { method: 'POST', body: fd });
-      const d = await r.json();
-      if (d.success) successCount++;
-    } catch (e) {
-      console.error('Auto upload failed for file', i, e);
-    }
-  }
-
-  if (successCount > 0) {
-    showStatus('✅ Auto-uploaded ' + successCount + '/' + files.length + ' to server!');
-  } else {
-    showStatus('❌ Auto-upload failed', 'error');
-  }
-}
-
-// ─── SAVE / SHARE ENGINE ──────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+//  SAVE / SHARE ENGINE
+// ═══════════════════════════════════════════════════════════
 function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
   const a   = document.createElement('a');
@@ -1307,6 +1294,13 @@ function downloadBlob(blob, filename) {
   document.body.appendChild(a);
   a.click();
   setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 4000);
+}
+
+function makeFileName(photo, i) {
+  const d = (photo && photo.date) || formatDateISO();
+  const t = ((photo && photo.time) || '').replace(/[:\s]/g, '-');
+  return ('RoadCam_' + d + '_' + (t || ('p'+i)) + '_' + ((photo && photo.id) || i) + '.jpg')
+         .replace(/[^\w.\-]/g, '_');
 }
 
 async function shareFiles(files, title) {
@@ -1420,7 +1414,24 @@ async function loadAlbum() {
     const r = await fetch(SERVER + '/api/photos');
     albumPhotos = await r.json();
     document.getElementById('photoCount').textContent = albumPhotos.length;
-    prefetchAlbumImages(albumPhotos);
+    async function loadAlbum() {
+  document.getElementById('albumLoading').style.display = 'block';
+  document.getElementById('albumGrid').style.display    = 'none';
+  document.getElementById('albumListView').innerHTML    = '';
+  document.getElementById('albumEmpty').style.display   = 'none';
+
+  try {
+    const r = await fetch(SERVER + '/api/photos');
+    albumPhotos = await r.json();
+    document.getElementById('photoCount').textContent = albumPhotos.length;
+    prefetchAlbumImages(albumPhotos); // ← ADD THIS LINE
+    renderAlbum();
+  } catch(e) {
+    showStatus('❌ Could not load photos', 'error');
+    document.getElementById('albumLoading').style.display = 'none';
+    document.getElementById('albumEmpty').style.display   = 'block';
+  }
+}
     renderAlbum();
   } catch(e) {
     showStatus('❌ Could not load photos', 'error');
@@ -1437,15 +1448,15 @@ function openAlbum() {
   loadAlbum();
 }
 
+// Album photos prefetch — visible ones first
 function prefetchAlbumImages(photos) {
+  // First 9 (visible screen) eager load
   photos.slice(0, 9).forEach(p => {
     const img = new Image();
     img.src = SERVER + p.filepath;
   });
 }
-
 function closeAlbum() { document.getElementById('albumOverlay').style.display = 'none'; }
-
 // ─── ROUTES MANAGER ───────────────────────────────────────
 let allRoutes = [];
 
@@ -1479,6 +1490,7 @@ async function loadAssignPhotos() {
     assignAllPhotos = await r.json();
     assignSelectedIds.clear();
     renderAssignGrid();
+    // Populate route select
     const sel = document.getElementById('assignRouteSelect');
     sel.innerHTML = '<option value="">-- Pick a route --</option>';
     allRoutes.forEach(rt => {
@@ -1491,14 +1503,12 @@ async function loadAssignPhotos() {
 
 function renderAssignGrid() {
   const grid  = document.getElementById('assignPhotoGrid');
-  if (!grid) return;
   const empty = document.getElementById('assignEmpty');
   grid.innerHTML = '';
   if (!assignAllPhotos.length) {
-    if (empty) empty.style.display = 'block'; 
-    return;
+    empty.style.display = 'block'; return;
   }
-  if (empty) empty.style.display = 'none';
+  empty.style.display = 'none';
   assignAllPhotos.forEach(photo => {
     const el = document.createElement('div');
     el.className = 'assign-photo-item' + (assignSelectedIds.has(photo.id) ? ' selected' : '');
@@ -1532,6 +1542,7 @@ async function applyRouteToPhotos() {
   if (!route) { showStatus('⚠️ Select a route first', 'info'); return; }
   const dateVal = document.getElementById('assignDateFilter').value;
   try {
+    // Date filter ඇත්නම් ඒ date photos, නැත්නම් all photos
     const url = SERVER + '/api/photos' + (dateVal ? '?date=' + dateVal : '');
     const r2  = await fetch(url);
     const photos = await r2.json();
@@ -1552,7 +1563,6 @@ async function applyRouteToPhotos() {
     }
   } catch(e) { showStatus('❌ Error', 'error'); }
 }
-
 async function loadRoutes() {
   try {
     const r = await fetch(SERVER + '/api/routes');
@@ -1588,6 +1598,7 @@ function renderRoutesList() {
     return;
   }
 
+  // Clear filter option
   if (current) {
     const clearEl = document.createElement('div');
     clearEl.style.cssText = 'text-align:center;margin-bottom:6px';
@@ -1645,16 +1656,24 @@ async function deleteRoute(id) {
     showStatus('🗑 Route deleted');
   } catch(e) { showStatus('❌ Error', 'error'); }
 }
-
 function renderAlbum() {
   document.getElementById('albumLoading').style.display = 'none';
   const grid  = document.getElementById('albumGrid');
   const list  = document.getElementById('albumListView');
   const empty = document.getElementById('albumEmpty');
-
-  grid.innerHTML = '';
-  list.innerHTML = '';
-
+// REPLACE existing grid item innerHTML with this:
+el.innerHTML = `
+  <div class="album-thumb-wrap">
+    <div class="album-thumb-skeleton"></div>
+    <img src="${SERVER}${photo.filepath}"
+         loading="lazy"
+         decoding="async"
+         onload="this.previousElementSibling.style.display='none';this.style.opacity='1'"
+         style="opacity:0;transition:opacity 0.25s ease">
+  </div>
+  <div class="album-item-type">${photo.type === 'self' ? '🤳' : '📸'}</div>
+  <div class="album-item-check">✓</div>
+`;
   const dateFilter  = document.getElementById('filterDate').value;
   const routeFilter = (document.getElementById('filterRoute').value || '').toLowerCase().trim();
   filteredPhotos    = albumPhotos.filter(p => {
@@ -1679,16 +1698,8 @@ function renderAlbum() {
       const wasStamped = stampedPhotoIds.has(photo.id);
       el.className = 'album-item' + (selectedIds.has(photo.id) ? ' selected' : '');
       if (wasStamped) el.style.boxShadow = '0 0 0 2px #a855f7, inset 0 0 0 1px #a855f744';
-      
       el.innerHTML = `
-        <div class="album-thumb-wrap">
-          <div class="album-thumb-skeleton"></div>
-          <img src="${SERVER}${photo.filepath}"
-               loading="lazy"
-               decoding="async"
-               onload="this.previousElementSibling.style.display='none';this.style.opacity='1'"
-               style="opacity:0;transition:opacity 0.25s ease">
-        </div>
+        <img src="${SERVER}${photo.filepath}" loading="lazy">
         <div class="album-item-type">${photo.type === 'self' ? '🤳' : '📸'}</div>
         <div class="album-item-check">✓</div>
       `;
@@ -1721,6 +1732,8 @@ function renderAlbum() {
 
   updateSelectModeUI();
 }
+
+
 
 function onPhotoClick(photo, el) {
   if (selectMode) {
@@ -1872,7 +1885,7 @@ function openSingleRestamp(photo) {
   document.getElementById('rsDate').value     = formatDateISO(now);
   document.getElementById('rsDevice').value   = currentDevice;
 
-  const frameNum = photo.id ? '#' + String(photo.id).padStart(4, '0') : '';
+const frameNum = photo.id ? '#' + String(photo.id).padStart(4, '0') : '';
   const typeBadge = photo.type === 'self' ? '🤳 SELF' : '📸 POSTER';
 
   document.getElementById('restampPreviews').innerHTML = `
@@ -1986,12 +1999,12 @@ function closeRestamp() {
   actionRow.style.opacity = '1';
   actionRow.style.pointerEvents = '';
 }
-
 // ─── FRAME DETAIL OVERLAY ─────────────────────────────────
 function openFrameDetail(photoId) {
   const photo = albumPhotos.find(p => p.id === photoId);
   if (!photo) return;
 
+  // Current index in filteredPhotos
   let currentIdx = filteredPhotos.findIndex(p => p.id === photoId);
 
   function renderDetail(idx) {
@@ -2082,7 +2095,6 @@ function openFrameDetail(photoId) {
 function closeFrameDetail() {
   document.getElementById('frameDetailOverlay').style.display = 'none';
 }
-
 // ─── applyRestamp — unified handler ───────────────────────
 async function applyRestamp(action) {
   const baseOpts = {
@@ -2170,8 +2182,8 @@ async function applyRestamp(action) {
       ? '⚠️ ' + done + '/' + restampIds.length + ' uploaded (' + errors + ' failed)'
       : '✅ Re-stamped & uploaded ' + done + ' photo(s)!';
     restampIds.forEach(id => stampedPhotoIds.add(id));
-    localStorage.setItem('stampedPhotoIds', JSON.stringify([...stampedPhotoIds]));
-    showStatus(msg, errors > 0 ? 'info' : 'success');
+localStorage.setItem('stampedPhotoIds', JSON.stringify([...stampedPhotoIds]));
+showStatus(msg, errors > 0 ? 'info' : 'success');
     closeRestamp();
     selectedIds.clear(); selectMode = false;
     document.getElementById('selectBar').classList.remove('active');
@@ -2184,8 +2196,8 @@ async function applyRestamp(action) {
     }
     if (errors > 0) showStatus('⚠️ ' + errors + ' photo(s) failed, delivering ' + processedFiles.length, 'info', 4000);
     restampIds.forEach(id => stampedPhotoIds.add(id));
-    localStorage.setItem('stampedPhotoIds', JSON.stringify([...stampedPhotoIds]));
-    presentSave(processedFiles, action);
+localStorage.setItem('stampedPhotoIds', JSON.stringify([...stampedPhotoIds]));
+presentSave(processedFiles, action);
     selectedIds.clear(); selectMode = false;
     document.getElementById('selectBar').classList.remove('active');
   }
@@ -2275,97 +2287,226 @@ function duDragLeave(e) { document.getElementById('duDropzone').classList.remove
 function duDrop(e) {
   e.preventDefault();
   document.getElementById('duDropzone').classList.remove('drag-over');
-  if (e.dataTransfer.files.length) handleDuFiles(Array.from(e.dataTransfer.files));
+  if (e.dataTransfer.files.length) addDuFiles(e.dataTransfer.files);
 }
-function duFilesChosen(e) {
-  if (e.target.files.length) handleDuFiles(Array.from(e.target.files));
-}
+function duFilesChosen(e) { if (e.target.files.length) addDuFiles(e.target.files); e.target.value = ''; }
 
-function handleDuFiles(files) {
-  duFiles = duFiles.concat(files);
+function addDuFiles(files) {
+  for (const f of files) {
+    if (!f.type.startsWith('image/')) continue;
+    duFiles.push({file: f, status: 'pending'});
+  }
   renderDuQueue();
-}
-
-function renderDuQueue() {
-  const queue = document.getElementById('duQueue');
-  queue.innerHTML = '';
-  duFiles.forEach((f, i) => {
-    const item = document.createElement('div');
-    item.className = 'du-queue-item';
-    item.innerHTML = `
-      <span class="du-queue-name">${f.name}</span>
-      <span class="du-queue-remove" onclick="removeDuFile(${i})">✕</span>
-    `;
-    queue.appendChild(item);
-  });
   document.getElementById('duUploadBtn').disabled = duFiles.length === 0;
 }
-
-function removeDuFile(index) {
-  duFiles.splice(index, 1);
+function removeDuFile(idx) {
+  duFiles.splice(idx, 1);
   renderDuQueue();
+  document.getElementById('duUploadBtn').disabled = duFiles.length === 0;
 }
-
-function duClear() {
-  duFiles = [];
-  renderDuQueue();
-  document.getElementById('duProgressBar').style.display = 'none';
-  document.getElementById('duProgressFill').style.width = '0%';
+function renderDuQueue() {
+  const container = document.getElementById('duQueue');
+  container.innerHTML = '';
+  duFiles.forEach((item, idx) => {
+    const el  = document.createElement('div');
+    el.className = 'du-item';
+    const url = URL.createObjectURL(item.file);
+    const statusText = {pending:'Pending',uploading:'Uploading…',done:'Done ✓',error:'Error ✗'}[item.status] || '';
+    el.innerHTML = `
+      <img class="du-item-thumb" src="${url}">
+      <div class="du-item-info">
+        <div class="du-item-name">${item.file.name}</div>
+        <div class="du-item-size">${(item.file.size/1024).toFixed(0)} KB</div>
+      </div>
+      <div class="du-item-status ${item.status}">${statusText}</div>
+      <button class="du-item-remove" onclick="removeDuFile(${idx})">✕</button>
+    `;
+    container.appendChild(el);
+  });
 }
 
 async function duStartUpload() {
   if (!duFiles.length) return;
   if (!serverOnline) { showStatus('⚠️ Server offline', 'error'); return; }
 
-  const road     = document.getElementById('duRoad').value || 'Unknown Road';
-  const town     = document.getElementById('duTown').value;
-  const prov     = document.getElementById('duProvince').value;
-  const routeVal = document.getElementById('duRoute').value;
-  const location = [road, town, prov].filter(Boolean).join(', ');
-  const dateVal  = document.getElementById('duDate').value || formatDateISO();
-  const device   = document.getElementById('duDevice').value || currentDevice;
   const startStr = document.getElementById('duTimeStart').value || '09:00';
   const endStr   = document.getElementById('duTimeEnd').value   || currentHM();
+  const times    = randomTimeSlots(hmToMins(startStr), hmToMins(endStr), duFiles.length);
 
-  const n         = duFiles.length;
-  const timeSlots = randomTimeSlots(hmToMins(startStr), hmToMins(endStr), n);
+  const road    = document.getElementById('duRoad').value || 'Unknown Road';
+  const town    = document.getElementById('duTown').value;
+  const prov    = document.getElementById('duProvince').value;
+  const isoDate = document.getElementById('duDate').value;
+  let dateDisplay = formatDateDMY();
+  if (isoDate) {
+    const [y,m,d] = isoDate.split('-');
+    const dt = new Date(parseInt(y),parseInt(m)-1,parseInt(d));
+    dateDisplay = dt.toLocaleDateString('en-GB') + ' • ' + dt.toLocaleDateString('en-GB',{weekday:'long'});
+  }
+  const device   = document.getElementById('duDevice').value || currentDevice;
+  const quality  = parseInt(document.getElementById('duQuality').value) / 100;
+  const color    = themeColors[document.getElementById('duTheme').value] || '#00d97e';
+  const location = [road, town, prov].filter(Boolean).join(', ');
 
-  const bar  = document.getElementById('duProgressBar');
-  const fill = document.getElementById('duProgressFill');
-  bar.style.display = 'block';
-  fill.style.width  = '0%';
+  const btn = document.getElementById('duUploadBtn');
+  btn.disabled = true;
+  const progressBar  = document.getElementById('duProgressBar');
+  const progressFill = document.getElementById('duProgressFill');
+  progressBar.style.display = 'block';
+  showStatus('⏳ Uploading ' + duFiles.length + ' photo(s)…', 'info', 120000);
 
-  document.getElementById('duUploadBtn').disabled = true;
-
-  let successCount = 0;
-  for (let i = 0; i < n; i++) {
-    fill.style.width = ((i + 1) / n * 100) + '%';
-    const fd = new FormData();
-    fd.append('photo', duFiles[i]);
-    fd.append('type', duType);
-    fd.append('date', dateVal);
-    fd.append('time', timeSlots[i]);
-    fd.append('timestamp', new Date().toLocaleString());
-    fd.append('location', location);
-    fd.append('device', device);
-    if (routeVal) fd.append('route', routeVal);
-
+  let done = 0;
+  for (let i = 0; i < duFiles.length; i++) {
+    duFiles[i].status = 'uploading';
+    renderDuQueue();
     try {
-      const r = await fetch(SERVER + '/api/upload', { method: 'POST', body: fd });
+      const img = await new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload = ev => {
+          const im = new Image();
+          im.onload  = () => res(im);
+          im.onerror = rej;
+          im.src = ev.target.result;
+        };
+        r.onerror = rej;
+        r.readAsDataURL(duFiles[i].file);
+      });
+
+      const tw = img.naturalWidth, th = img.naturalHeight;
+
+      // Original (stamp නැති) canvas
+      const origCanvas = document.createElement('canvas');
+      origCanvas.width = tw; origCanvas.height = th;
+      origCanvas.getContext('2d').drawImage(img, 0, 0, tw, th);
+      const origBlob = await new Promise(res => origCanvas.toBlob(res, 'image/jpeg', 1.0));
+      const now   = new Date();
+      const fd    = new FormData();
+      const fname = 'du_' + Date.now() + '.jpg';
+      fd.append('photo', new File([origBlob], fname, {type:'image/jpeg'}));
+      fd.append('type',      bdType);
+      fd.append('date',      isoDate || now.toISOString().split('T')[0]);
+      fd.append('time',      times[i]);
+      fd.append('timestamp', now.toLocaleString());
+      fd.append('location',  location);
+      fd.append('route',     document.getElementById('duRoute').value || '');
+      fd.append('device',    device);
+
+      const r = await fetch(SERVER + '/api/upload', {method:'POST', body:fd});
       const d = await r.json();
-      if (d.success) successCount++;
-    } catch (e) {
-      console.error('Direct upload failed for file', i, e);
+      duFiles[i].status = d.success ? 'done' : 'error';
+      if (d.success) done++;
+    } catch(e) {
+      duFiles[i].status = 'error';
+      console.error('DU upload error', e);
     }
-    await new Promise(r => setTimeout(r, 50));
+    progressFill.style.width = ((i+1)/duFiles.length*100) + '%';
+    renderDuQueue();
+    await new Promise(r => setTimeout(r, 400));
   }
 
-  showStatus('✅ Uploaded ' + successCount + '/' + n + ' photo(s)');
-  duClear();
-  closeDirectUpload();
+  showStatus('✅ Uploaded ' + done + '/' + duFiles.length + ' photos!');
+  btn.disabled = false;
+  setTimeout(() => {
+    duFiles = duFiles.filter(f => f.status !== 'done');
+    renderDuQueue();
+    progressBar.style.display = 'none';
+    progressFill.style.width  = '0%';
+    document.getElementById('duUploadBtn').disabled = duFiles.length === 0;
+  }, 3000);
 }
 
-window.onload = initApp;
+function duClear() {
+  duFiles = [];
+  renderDuQueue();
+  document.getElementById('duUploadBtn').disabled = true;
+  document.getElementById('duProgressBar').style.display = 'none';
+  document.getElementById('duProgressFill').style.width  = '0%';
+}
+// ─── AUTO SERVER UPLOAD (Bulk, no sheet) ──────────────────
+let _autoUploadRunning = false;
+async function autoServerUpload(files) {
+  if (_autoUploadRunning) return;
+  _autoUploadRunning = true;
+  const now      = new Date();
+  const road     = document.getElementById('manualRoad').value || gpsRoad || 'Unknown Road';
+  const town     = document.getElementById('manualTown').value || gpsTown;
+  const prov     = document.getElementById('manualProvince').value || gpsProvince;
+  const isoDate  = formatDateISO(now);
+  const device   = currentDevice;
+  const quality  = parseInt(qualitySlider.value) / 100;
+  const color    = getThemeColor();
+  const location = [road, town, prov].filter(Boolean).join(', ');
+  const times    = randomTimeSlots(hmToMins('09:00'), hmToMins(currentHM()), files.length);
+
+  let dateDisplay = formatDateDMY(now);
+
+  showStatus('⏳ Uploading ' + files.length + ' photo(s)…', 'info', 120000);
+
+  let done = 0;
+  for (let i = 0; i < files.length; i++) {
+    try {
+      const img = await new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload = ev => {
+          const im = new Image();
+          im.onload  = () => res(im);
+          im.onerror = rej;
+          im.src = ev.target.result;
+        };
+        r.onerror = rej;
+        r.readAsDataURL(files[i]);
+      });
+
+      const tw = img.naturalWidth, th = img.naturalHeight;
+      
+      // Global canvas වෙනුවට dynamic dynamic canvas එකක් තෑනීම
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = tw; 
+      tempCanvas.height = th;
+      const ctx = tempCanvas.getContext('2d');
+      
+      ctx.drawImage(img, 0, 0, tw, th);
+      drawOverlay(ctx, tw, th, {
+        color, time: times[i], date: dateDisplay,
+        road, city: [town, prov].filter(Boolean).join(', '),
+        coords: gpsCoords, device
+      });
+
+      // Original (no overlay) save කරන්න වෙනම canvas
+      const origCanvas = document.createElement('canvas');
+      origCanvas.width = tw; origCanvas.height = th;
+      origCanvas.getContext('2d').drawImage(img, 0, 0, tw, th);
+      const origBlob = await new Promise(res => origCanvas.toBlob(res, 'image/jpeg', 1.0));
+      const fname = 'bulk_' + Date.now() + '_' + i + '.jpg';
+      const fd    = new FormData();
+      fd.append('photo', new File([origBlob], fname, {type:'image/jpeg'}));
+      fd.append('type',      bdType);
+      fd.append('date',      isoDate || now.toISOString().split('T')[0]);
+      fd.append('time',      times[i]);
+      fd.append('timestamp', now.toLocaleString());
+      fd.append('location',  location);
+      const bdRouteEl = document.getElementById('bdRoute');
+      fd.append('route',     bdRouteEl ? bdRouteEl.value : '');
+      fd.append('device',    device);
+
+      const r = await fetch(SERVER + '/api/upload', {method:'POST', body:fd});
+      const d = await r.json();
+      if (d.success) done++;
+    } catch(e) {
+      console.error('Auto upload error', e);
+    }
+    await new Promise(r => setTimeout(r, 300));
+  }
+
+  showStatus(done === files.length
+    ? '✅ Uploaded ' + done + '/' + files.length + ' photos!'
+    : '⚠️ Uploaded ' + done + '/' + files.length + ' (' + (files.length - done) + ' failed)',
+    done < files.length ? 'info' : 'success');
+
+  _autoUploadRunning = false;
+}
+
+initApp();
 </script>
 </body>
 </html>
