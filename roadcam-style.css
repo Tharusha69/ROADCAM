@@ -1155,22 +1155,55 @@ input[type="date"].sfield { color-scheme: dark; color: var(--t1); }
   transition: all 0.15s;
   display: flex; align-items: center; justify-content: center; gap: 5px;
 }
-.rs-act-btn:active { transform: scale(0.97); }
+/* ── RE-STAMP sheet buttons ── */
+.rs-act-btn {
+  padding: 10px 18px;
+  border-radius: 20px;
+  border: none;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.rs-act-btn:active { transform: scale(0.96); }
+
 .rs-act-save   { background: #16a34a; color: #fff; }
-.rs-act-save:hover   { background: #15803d; box-shadow: 0 0 16px rgba(22,163,74,0.3); }
+.rs-act-save:hover { background: #15803d; }
+
 .rs-act-share  { background: #1e3a8a; color: #fff; }
-.rs-act-share:hover  { background: #1e40af; box-shadow: 0 0 16px rgba(30,58,138,0.3); }
+.rs-act-share:hover { background: #1e40af; }
+
 .rs-act-server { background: var(--g); color: #000; }
 .rs-act-server:hover { box-shadow: 0 0 16px rgba(0,230,118,0.3); }
-.rs-act-all    { background: var(--g); color: #000; grid-column: 1/-1; }
+
 .rs-act-cancel {
   background: var(--s2);
   border: 1px solid var(--border-dim);
   color: var(--t2);
   grid-column: 1/-1;
-  padding: 11px;
+  padding: 10px;
 }
 .rs-act-cancel:hover { border-color: rgba(239,83,80,0.3); color: var(--red); }
+
+/* Action row — pill buttons flex wrap */
+.rs-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+.rs-action-row .rs-act-cancel {
+  width: 100%;
+  border-radius: 20px;
+}
 
 .rs-progress-wrap { display: none; margin-top: 12px; }
 .rs-progress-label {
@@ -1430,18 +1463,50 @@ input[type="date"].sfield { color-scheme: dark; color: var(--t1); }
 }
 .bd-act-btn:active { transform: scale(0.97); }
 .bd-act-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+.bd-act-btn {
+  padding: 10px 18px;
+  border-radius: 20px;
+  border: none;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.bd-act-btn:active { transform: scale(0.96); }
+.bd-act-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
 .bd-act-save  { background: #16a34a; color: #fff; }
-.bd-act-save:hover { background: #15803d; box-shadow: 0 0 16px rgba(22,163,74,0.3); }
+.bd-act-save:hover { background: #15803d; }
+
 .bd-act-share { background: #1e3a8a; color: #fff; }
-.bd-act-share:hover { background: #1e40af; box-shadow: 0 0 16px rgba(30,58,138,0.3); }
+.bd-act-share:hover { background: #1e40af; }
+
+.bd-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
 .bd-act-cancel {
+  width: 100%;
+  border-radius: 20px;
   background: var(--s2);
   border: 1px solid var(--border-dim);
   color: var(--t2);
-  grid-column: 1/-1; padding: 11px;
-  font-size: 11px; border-radius: var(--r-lg);
+  padding: 10px;
+  font-size: 11px;
 }
-
+.bd-act-cancel:hover { border-color: rgba(239,83,80,0.3); color: var(--red); }
 /* ══════════════════════════════════════════
    DIRECT UPLOAD OVERLAY
 ══════════════════════════════════════════ */
