@@ -5,6 +5,8 @@ const path = require('path');
 const https = require('https');
 const http = require('http');
 
+
+
 // Configuration
 const SERVER_URL = process.env.SERVER_URL || 'http://localhost:3000';
 const PHOTO_TYPE = process.env.PHOTO_TYPE || 'poster'; // 'poster' or 'self'
