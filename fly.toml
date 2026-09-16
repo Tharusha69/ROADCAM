@@ -3,7 +3,7 @@
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'roadcam-yizyag'
+app = 'mbm-roadcam'
 primary_region = 'ams'
 
 [build]
